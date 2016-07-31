@@ -38,7 +38,7 @@
 
 #
 # import sys
-# sys.path.append( "C:/Users/hai/code/cinder/Cinder-3DTools/Cinder-3DTools/Maya/TriMeshExporter" )
+# sys.path.append( "C:/Users/hai/code/cinder/Cinder-3DTools/Maya/TriMeshExporter" )
 # import TriMeshExporter
 # reload( TriMeshExporter )
 # 
