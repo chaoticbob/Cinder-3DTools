@@ -1,4 +1,4 @@
- """
+"""
  Copyright 2016 Google Inc.
  
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,9 @@
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that
  the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and
+	* Redistributions of source code must retain the above copyright notice, this list of conditions and
 	the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
+	* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
 	the following disclaimer in the documentation and/or other materials provided with the distribution.
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
@@ -271,11 +271,30 @@ class TriMesh( object ):
 	# class TriMesh
 	pass
 
+## MeshInfo
+class MeshInfo( object ):
+	## c'tor
+	def __init__( self, transformDagPath = None, shapeDagPath = None ):
+		self.transformDagPath = transformDagPath
+		self.shapeDagPath = shapeDagPath
+		pass
+
+	## isValid
+	def isValid( self ):
+		return True if ( ( self.transformDagPath is not None ) and ( self.shapeDagPath is not None ) ) else False
+		pass
+
+	## partialPathName
+	def partialPathName( self ):
+		return self.transformDagPath.partialPathName() if self.transformDagPath is not None else None
+		pass		
+	pass
 
 ## TriMeshExporter
 class TriMeshExporter( object ):
 	## c'tor
 	def __init__( self ):
+		self.basePath = None
 		pass
 
 	## createFilePath
@@ -324,8 +343,10 @@ class TriMeshExporter( object ):
 			srcColorPlugs = dstColorPlug.connectedTo( True, False )
 			srcColorNode = OpenMaya.MFnDependencyNode( srcColorPlugs[0].node() )
 			if "file" == srcColorNode.typeName:
-				fileName = srcColorNode.findPlug( "fileTextureName", False )
-				result[1] = fileName.asString()
+				fileNamePlug = srcColorNode.findPlug( "fileTextureName", False )
+				fileName = fileNamePlug.asString()
+				fileName = os.path.relpath( fileName, self.basePath )
+				result[1] = fileName
 		else:
 			colorR = shaderNode.findPlug( "colorR", False )
 			colorG = shaderNode.findPlug( "colorG", False )
@@ -383,28 +404,40 @@ class TriMeshExporter( object ):
 		shaderTag = shaderNode.name() if shaderCount > 1 else None
 		filePath = self.createFilePath( parentDagPath, dagPath, mesh.instanceCount( False ), path, shaderTag, ".mesh" );
 		triMesh.write( filePath )
+		# Add triMeshFile attribute
+		relFilePath = os.path.relpath( filePath, self.basePath )
+		geoXml.set( "triMeshFile", relFilePath )
 		# Write out data
 		print( "Exported %s to %s" % ( dagPath.partialPathName(), filePath ) )		
 		pass
 
 	## createFilePath
-	def exportMesh( self, transformDagPath, dagPath, path, xmlParent ):
-		if OpenMaya.MFn.kMesh != dagPath.apiType():
-			print( "Node isn't MFnMesh : %s" % dagPath.partialPathName() )
+	def exportMesh(self, transformDagPath, shapeDagPath, path, xmlParent):
+		if OpenMaya.MFn.kMesh != shapeDagPath.apiType():
+			print( "Node isn't MFnMesh : %s" % shapeDagPath.partialPathName())
 			return
-
-		xml = ET.SubElement( xmlParent, "mesh", name = dagPath.partialPathName() )
-
-		mesh = OpenMaya.MFnMesh( dagPath )
+		# Create mesh XML node
+		xml = ET.SubElement(xmlParent, "mesh", name = shapeDagPath.partialPathName())
+		# Transform data
+		transform = OpenMaya.MFnTransform( transformDagPath )
+		matrix = transform.transformation().asMatrix()
+		elements = []
+		for row in range( 0, 4 ):
+			for col in range( 0, 4 ):
+				value = matrix.getElement( row, col )
+				elements.append( float( value ) )
+		xml.set( "transform", " ".join( map( str, elements ) ) )
+		# Get mesh data
+		mesh = OpenMaya.MFnMesh(shapeDagPath)
 		meshData = {}
 		meshData["position"]  = mesh.getFloatPoints()
 		meshData["normal"]    = mesh.getVertexNormals( False )
 		meshData["texCoord0"] = mesh.getUVs()
 		meshData["tangent"]   = mesh.getTangents
-
+		# Get connected shaders
 		instance = 0
 		[shaderObjs, polyInfos] = mesh.getConnectedShaders( instance )
-		
+		# Build poly face shader map
 		shaderFaces = {}
 		for polyIdx in range( 0, mesh.numPolygons ):
 			shaderObjIdx = polyInfos[polyIdx]
@@ -413,56 +446,63 @@ class TriMeshExporter( object ):
 			else:
 				shaderFaces[shaderObjIdx] = []
 				shaderFaces[shaderObjIdx].append( polyIdx )
-
+		# Write TriMesh file
 		shaderCount = len( shaderFaces )
 		for shaderObjIdx in shaderFaces:
 			shaderObj = shaderObjs[shaderObjIdx]
 			polyFaces = shaderFaces[shaderObjIdx]
-			self.writeTriMeshFile( transformDagPath, xml, path, mesh, meshData, shaderCount, shaderObj, polyFaces )			
+			self.writeTriMeshFile( transformDagPath, xml, path, mesh, meshData, shaderCount, shaderObj, polyFaces )
+			pass
 		pass
 
-	## createFilePath
-	def exportDagPath( self, xmlRoot, dagPath, path, fileName ):
-		apiType = dagPath.apiType()
-		if OpenMaya.MFn.kTransform == apiType:
-			numShapes = dagPath.numberOfShapesDirectlyBelow()
-			for i in range( 0, numShapes ):
-				shapeDagPath = OpenMaya.MDagPath( dagPath )
-				shapeDagPath.extendToShape( i )
-				if OpenMaya.MFn.kMesh == shapeDagPath.apiType():
-					self.exportMesh( dagPath, shapeDagPath, path, xmlRoot )
-				else:
-					print( "Unsupported node (apiType=%d) : %s" % ( shapeDagPath.apiType(), shapeDagPath.partialPathName() ) )					
-		elif OpenMaya.MFn.kMesh == apiType:
-			self.exportMesh( None, dagPath, path, xmlRoot )			
-		else:
-			print( "Unsupported node (apiType=%d) : %s" % ( dagPath.apiType(), dagPath.partialPathName() ) )
-		pass
+	## findMayaMeshes
+	def findMayaMeshes( self, dagPath ):
+		result = []
+		for childNum in range( 0, dagPath.childCount() ):
+			childObj = dagPath.child( childNum )
+			childDagPath = OpenMaya.MDagPath.getAPathTo( childObj )
+			childApiType = childDagPath.apiType()
+			if OpenMaya.MFn.kTransform == childApiType:
+				meshInfos = self.findMayaMeshes( childDagPath )
+				result.extend( meshInfos )
+			elif OpenMaya.MFn.kMesh == childApiType:
+				mi = MeshInfo( dagPath, childDagPath )
+				result.append( mi )
+				pass
+			pass
+		return result
+		pass		
 
 	## createFilePath
-	def exportSelected( self, path, fileName ):
+	def exportSelected( self, path, xmlName ):
+		self.basePath = path
 		selList = OpenMaya.MGlobal.getActiveSelectionList()
 		if selList.isEmpty():
 			print( "Nothing selected" )
 			return
-
 		print( "Exporting as Cinder TriMesh data to %s" % path )
 		if not os.path.exists( path ):
 			os.makedirs( path )
-
+		# Create XML doc
 		xmlRoot = ET.Element( "data" )
-
+		# Find all mesh shape nodes and their immediate transforms
+		meshInfos = []
 		it = OpenMaya.MItSelectionList( selList );
 		while not it.isDone():
-			#mesh = OpenMaya.MFnMesh( it.getDagPath() )
-			self.exportDagPath( xmlRoot, it.getDagPath(), path, fileName );
+			#self.exportDagPath( xmlRoot, it.getDagPath(), path, fileName );
+			tmpMeshInfos = self.findMayaMeshes( it.getDagPath() )
+			meshInfos.extend( tmpMeshInfos )
+			# Advance to next item
 			it.next()
 		pass
-
+		# Export mesh geometry
+		for meshInfo in meshInfos:
+			self.exportMesh( meshInfo.transformDagPath, meshInfo.shapeDagPath, path, xmlRoot )
+		# Write XML
 		if len( list( xmlRoot ) ) > 0:
 			tree = ET.ElementTree( xmlRoot )
 			prettyXml = minidom.parseString( ET.tostring( xmlRoot ) ).toprettyxml( indent="   " )
-			file = open( os.path.join( path, fileName + ".xml" ), "w" )
+			file = open( os.path.join( path, xmlName + ".xml" ), "w" )
 			file.write( prettyXml )	
 
 	pass
