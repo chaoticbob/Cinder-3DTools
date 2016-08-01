@@ -107,19 +107,19 @@ class TriMesh( object ):
 		pass
 
 	def appendPosition( self, x, y, z = None, w = None ):
-		self.position.append( x )
-		self.position.append( y )
+		self.positions.append( x )
+		self.positions.append( y )
 		if z is not None:
-			self.position.append( z )
+			self.positions.append( z )
 		if w is not None:
-			self.position.append( w )
+			self.positions.append( w )
 		if 0 == self.positionsDims:
 			if w is not None:
-				self.positionDims = 4
+				self.positionsDims = 4
 			elif z is not None:
-				self.positionDims = 3
+				self.positionsDims = 3
 			else:
-				self.positionDims = 2
+				self.positionsDims = 2
 		pass
 
 	def appendNormal( self, x, y, z ):
@@ -242,27 +242,34 @@ class TriMesh( object ):
 		pass
 
 	def writeAttrib( self, file, attrib, dims, size, data ):
-		if 0 == len( data ):
+		if 0 == size:
 			return
-		file.write( struct.pack( 'I', attrib ) )
-		file.write( struct.pack( 'b', dim ) )
-		file.write( struct.pack( 'I', size ) )
+		file.write( struct.pack( "I", attrib ) )
+		file.write( struct.pack( "B", dims ) )
+		file.write( struct.pack( "I", size ) )
 		data.tofile( file )
 		pass
 
 	def write( self, path ):
-		file = open( path, "wb" )
-		file.write( struct.pack( 'I', self.version ) )
-		file.write( struct.pack( 'I', self.getNumVertices() ) )
+		try:
+			file = open( path, "wb" )
+		except:
+			print( "Failed to open file for write: %s" % path )
+			return
+		file.write( struct.pack( "B", self.version ) )
+		file.write( struct.pack( "I", self.getNumVertices() ) )
+		# Write indices
 		if self.getNumVertices() > 0:
 			self.indices.tofile( file )
+		# Write attributes
+		print( self.positions )
 		self.writeAttrib( file, TriMesh.POSITION, self.positionsDims, len( self.positions ), self.positions )
 		self.writeAttrib( file, TriMesh.COLOR, self.colorsDims, len( self.colors ), self.colors )
+		self.writeAttrib( file, TriMesh.NORMAL, self.normalsDims, len( self.normals ), self.normals )
 		self.writeAttrib( file, TriMesh.TEX_COORD_0, self.texCoords0Dims, len( self.texCoords0 ), self.texCoords0 )
 		self.writeAttrib( file, TriMesh.TEX_COORD_1, self.texCoords1Dims, len( self.texCoords1 ), self.texCoords1 )
 		self.writeAttrib( file, TriMesh.TEX_COORD_2, self.texCoords2Dims, len( self.texCoords2 ), self.texCoords2 )
 		self.writeAttrib( file, TriMesh.TEX_COORD_3, self.texCoords3Dims, len( self.texCoords3 ), self.texCoords3 )
-		self.writeAttrib( file, TriMesh.NORMAL, self.normalsDims, len( self.normals ), self.normals )
 		self.writeAttrib( file, TriMesh.TANGENT, self.tangentsDims, len( self.tangents ), self.tangents )
 		self.writeAttrib( file, TriMesh.BITANGENT,  self.bitangentsDims, len( self.bitangents ), self.bitangents )
 		file.close()
@@ -352,8 +359,8 @@ class TriMeshExporter( object ):
 			colorG = shaderNode.findPlug( "colorG", False )
 			colorB = shaderNode.findPlug( "colorB", False )
 			result[0][0] = colorR.asFloat()
-			result[0][1] = colorR.asFloat()
-			result[0][2] = colorR.asFloat()
+			result[0][1] = colorG.asFloat()
+			result[0][2] = colorB.asFloat()
 		# Return
 		return result
 		pass
@@ -370,6 +377,16 @@ class TriMeshExporter( object ):
 			vertices = mesh.getPolygonVertices( face )
 			for vertex in vertices:
 				triMesh.appendIndex( vertex )
+		# Positions and color
+		for P in points:
+			triMesh.appendPosition( P.x, P.y, P.z )
+			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+		# Normals
+		for N in normals:
+			triMesh.appendPosition( N.x, N.y, N.z )
+		# TexCoords0
+		for uv in texCoord0:
+			triMesh.appendPosition( uv.x, uv.y )
 		return triMesh
 		pass
 
@@ -411,6 +428,50 @@ class TriMeshExporter( object ):
 		print( "Exported %s to %s" % ( dagPath.partialPathName(), filePath ) )		
 		pass
 
+
+	def getMeshData( self, mesh ):
+		print( mesh.getTriangles() )
+
+		[meshTriCounts, meshTriVertices] = mesh.getTriangles()
+		faceTrianglesVertices = []
+		vertexOffset = 0
+		for polyIdx in range( 0, len( meshTriCounts ) ):
+			vertexCount = 3 * meshTriCounts[polyIdx]
+			trianglesVerticess = array.array( "I" )
+			for vertexIdx in range( vertexOffset, vertexOffset + vertexCount ):
+				trianglesVerticess.append( meshTriVertices[vertexIdx] )
+				pass
+			faceTrianglesVertices.append( trianglesVerticess )
+			pass
+
+		print( faceTrianglesVertices )
+
+		meshData = {}
+		meshData["position"]  = mesh.getFloatPoints()
+		meshData["normal"]    = mesh.getVertexNormals( False )
+		meshData["tangent"]   = mesh.getTangents
+		meshData["texCoord0"] = OpenMaya.MFloatPointArray()
+		[uArray, vArray] = mesh.getUVs()
+		for i in range( 0, len( uArray ) ):
+			meshData["texCoord0"].append( OpenMaya.MFloatPoint( uArray[i], vArray[i] ) )		
+			pass
+		return meshData
+		pass
+
+	def getShaderFaces( self, mesh, instance ):
+		shaderFaces = {}
+		[shaderObjs, polyInfos] = mesh.getConnectedShaders( instance )
+		for polyIdx in range( 0, mesh.numPolygons ):
+			shaderObjIdx = polyInfos[polyIdx]
+			if shaderObjIdx in shaderFaces:
+				shaderFaces[shaderObjIdx].append( polyIdx )
+			else:
+				shaderFaces[shaderObjIdx] = []
+				shaderFaces[shaderObjIdx].append( polyIdx )
+			pass
+		return shaderFaces
+		pass
+
 	## createFilePath
 	def exportMesh(self, transformDagPath, shapeDagPath, path, xmlParent):
 		if OpenMaya.MFn.kMesh != shapeDagPath.apiType():
@@ -429,23 +490,10 @@ class TriMeshExporter( object ):
 		xml.set( "transform", " ".join( map( str, elements ) ) )
 		# Get mesh data
 		mesh = OpenMaya.MFnMesh(shapeDagPath)
-		meshData = {}
-		meshData["position"]  = mesh.getFloatPoints()
-		meshData["normal"]    = mesh.getVertexNormals( False )
-		meshData["texCoord0"] = mesh.getUVs()
-		meshData["tangent"]   = mesh.getTangents
+		meshData = self.getMeshData( mesh )
 		# Get connected shaders
 		instance = 0
-		[shaderObjs, polyInfos] = mesh.getConnectedShaders( instance )
-		# Build poly face shader map
-		shaderFaces = {}
-		for polyIdx in range( 0, mesh.numPolygons ):
-			shaderObjIdx = polyInfos[polyIdx]
-			if shaderObjIdx in shaderFaces:
-				shaderFaces[shaderObjIdx].append( polyIdx )
-			else:
-				shaderFaces[shaderObjIdx] = []
-				shaderFaces[shaderObjIdx].append( polyIdx )
+		shaderFaces = self.getShaderFaces( mesh, instance )
 		# Write TriMesh file
 		shaderCount = len( shaderFaces )
 		for shaderObjIdx in shaderFaces:
