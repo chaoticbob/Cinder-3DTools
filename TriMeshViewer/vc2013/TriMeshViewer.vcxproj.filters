@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="simplescene">
+      <UniqueIdentifier>{4b4dae91-045f-4a9c-8ecf-38ff041ca1b1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\TriMeshViewerApp.cpp">
@@ -27,6 +30,9 @@
     <ClCompile Include="..\src\Viewport3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Loader\simplescene\SimpleScene.cpp">
+      <Filter>simplescene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h">
@@ -34,6 +40,9 @@
     </ClInclude>
     <ClInclude Include="..\src\Viewport3D.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Loader\simplescene\SimpleScene.h">
+      <Filter>simplescene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

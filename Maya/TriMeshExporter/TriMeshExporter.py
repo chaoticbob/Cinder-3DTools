@@ -21,10 +21,10 @@
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that
  the following conditions are met:
 
-	* Redistributions of source code must retain the above copyright notice, this list of conditions and
-	the following disclaimer.
-	* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
-	the following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Redistributions of source code must retain the above copyright notice, this list of conditions and
+    the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
+    the following disclaimer in the documentation and/or other materials provided with the distribution.
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -310,6 +310,7 @@ class TriMeshExporter( object ):
 		self.basePath = None
 		self.bakeTranform = False
 		self.angleWeightedNormals = False
+		self.xmlFilePath = None
 		pass
 
 	## createFilePath
@@ -429,7 +430,7 @@ class TriMeshExporter( object ):
 
 	def populateFloatAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
-		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, self.basePath )
+		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, os.path.dirname( self.xmlFilePath ) )
 		if fileName:
 			xml.set( "type", "file" )
 			xml.set( "value", fileName )
@@ -442,7 +443,7 @@ class TriMeshExporter( object ):
 
 	def populateColorAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
-		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, self.basePath )
+		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, os.path.dirname( self.xmlFilePath ) )
 		if fileName:
 			xml.set( "type", "file" )
 			xml.set( "value", fileName )
@@ -594,8 +595,9 @@ class TriMeshExporter( object ):
 		shaderTag = shaderNode.name() if shaderCount > 1 else None
 		filePath = self.createFilePath( parentDagPath, dagPath, mesh.instanceCount( False ), path, shaderTag, ".mesh" );
 		triMesh.write( filePath )
-		# Add triMeshFile attribute
-		relFilePath = os.path.relpath( filePath, self.basePath )
+		# Add triMeshFile attribute 
+		relFilePath = os.path.relpath( filePath, os.path.dirname( self.xmlFilePath ) )
+		relFilePath = relFilePath.replace( "\\", "/" )
 		geoXml.set( "triMeshFile", relFilePath )
 		# Write out data
 		print( "Exported %s to %s" % ( dagPath.partialPathName(), filePath ) )		
@@ -711,6 +713,8 @@ class TriMeshExporter( object ):
 		self.basePath = path
 		self.bakeTranform = bakeTranform
 		self.angleWeightedNormals = angleWeightedNormals
+
+		# Get selection list
 		selList = OpenMaya.MGlobal.getActiveSelectionList()
 		if selList.isEmpty():
 			print( "Nothing selected" )
@@ -725,8 +729,11 @@ class TriMeshExporter( object ):
 		print( "Exporting as Cinder TriMesh data to %s" % path )
 		if not os.path.exists( path ):
 			os.makedirs( path )
+		# XML scene file path
+		self.xmlFilePath = os.path.join( path, sceneFile + ".xml" )
+		self.xmlFilePath = self.xmlFilePath.replace( "\\", "/" )
 		# Create XML doc
-		xmlRoot = ET.Element( "data" )
+		xmlRoot = ET.Element( "simplescene" )
 		# Find all mesh shape nodes and their immediate transforms
 		meshInfos = []
 		it = OpenMaya.MItSelectionList( selList );
@@ -744,11 +751,9 @@ class TriMeshExporter( object ):
 		if len( list( xmlRoot ) ) > 0:
 			tree = ET.ElementTree( xmlRoot )
 			prettyXml = minidom.parseString( ET.tostring( xmlRoot ) ).toprettyxml( indent = "   " )
-			xmlFilePath = os.path.join( path, sceneFile + ".xml" )
-			xmlFilePath = xmlFilePath.replace( "\\", "/" )
-			file = open( xmlFilePath, "w" )
+			file = open( self.xmlFilePath, "w" )
 			file.write( prettyXml )	
-			print( "Wrote %s" % xmlFilePath )
+			print( "Wrote %s" % self.xmlFilePath )
 			pass
 	pass
 

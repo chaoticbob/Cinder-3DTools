@@ -22,9 +22,9 @@
  the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice, this list of conditions and
-	the following disclaimer.
+    the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and
-	the following disclaimer in the documentation and/or other materials provided with the distribution.
+    the following disclaimer in the documentation and/or other materials provided with the distribution.
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -36,59 +36,30 @@
  POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "cinder/app/App.h"
-#include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
-#include "cinder/Camera.h"
-#include "cinder/TriMesh.h"
-using namespace ci;
-using namespace ci::app;
-using namespace std;
+#include "cinder/Matrix.h"
 
-#include "simplescene/SimpleScene.h"
-namespace ss = simplescene;
+namespace simplescene {
 
-//! \class TriMeshViewerApp
-//!
-//!
-class TriMeshViewerApp : public App {
+class Node {
 public:
-	void setup() override;
-	void mouseDown( MouseEvent event ) override;
-	void update() override;
-	void draw() override;
+
+	Node();
+	Node( const ci::mat4 &transform, const ci::gl::BatchRef &batch, const ci::gl::Texture2dRef &colorTexture = ci::gl::Texture2dRef() );
+	virtual ~Node();
+
+	const ci::mat4&				getTransform() const { return mTransform; }
+	const ci::gl::BatchRef&		getBatch() const { return mBatch; }	
+	const ci::gl::Texture2dRef&	getColorTexture() const { return mColorTexture; }
+
+	virtual void				draw();
 
 private:
-	CameraPersp				mCam;
-	std::vector<ss::Node>	mNodes;
+	ci::mat4					mTransform;
+	ci::gl::BatchRef			mBatch;
+	ci::gl::Texture2dRef		mColorTexture;
 };
 
-void TriMeshViewerApp::setup()
-{
-	mCam.lookAt( vec3( 2, 10, 20 ), vec3( 0, 0, 0 ) );
-	mNodes = ss::load( getAssetPath( "Basic/Basic.xml" ) );
-}
+std::vector<Node> load( const ci::fs::path &sceneXml );
 
-void TriMeshViewerApp::mouseDown( MouseEvent event )
-{
-}
-
-void TriMeshViewerApp::update()
-{
-}
-
-void TriMeshViewerApp::draw()
-{
-	gl::clear( Color( 0.3f, 0.65f, 0.65f ) ); 
-	gl::enableDepth();
-
-	gl::setMatrices( mCam );
-	gl::rotate( 0.75f * getElapsedSeconds(), 0, 1, 0 );
-	gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
-
-	for( auto& node : mNodes ) {
-		node.draw();
-	}
-}
-
-CINDER_APP( TriMeshViewerApp, RendererGl )
+} // namespace simplescene

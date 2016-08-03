@@ -1,0 +1,172 @@
+<?xml version="1.0" ?>
+<simplescene>
+   <mesh name="pPlaneShape1" transform="1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0">
+      <shaderSet name="lambert4" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/rg_grad.png"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pPlane1.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pTorusShape1" transform="1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.634731961435 0.0 1.0">
+      <shaderSet name="lambert3" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="color" valueB="0.413100004196" valueG="0.386400014162" valueR="0.702199995518"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pTorus1.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pCubeShape1" transform="1.68489329809 0.0 0.0 0.0 0.0 1.68489329809 0.0 0.0 0.0 0.0 1.68489329809 0.0 0.0 2.96424806581 0.0 1.0">
+      <shaderSet name="lambert5" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="color" valueB="0.871999979019" valueG="0.871999979019" valueR="0.239299997687"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pCube1.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape1" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 1.0 4.0 1.0">
+      <shaderSet name="lambert10" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_4.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere1.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape2" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 1.0 -4.0 1.0">
+      <shaderSet name="lambert11" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_5.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere2.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape3" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 4.0 1.0 4.0 1.0">
+      <shaderSet name="lambert7" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_1.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere3.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape4" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 -4.0 1.0 4.0 1.0">
+      <shaderSet name="lambert12" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_6.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere4.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape5" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 4.0 1.0 -4.0 1.0">
+      <shaderSet name="lambert9" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_3.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere5.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape6" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 -4.0 1.0 -4.0 1.0">
+      <shaderSet name="lambert14" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_8.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere6.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape9" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 4.0 1.0 0.0 1.0">
+      <shaderSet name="lambert8" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_2.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere9.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape10" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 4.0 1.0 0.0 1.0">
+      <shaderSet name="lambert1" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="color" valueB="0.5" valueG="0.5" valueR="0.5"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere10.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape11" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 4.0 1.0 0.0 1.0">
+      <shaderSet name="lambert1" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="color" valueB="0.5" valueG="0.5" valueR="0.5"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere11.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+   <mesh name="pSphereShape12" transform="1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 0.0 0.0 0.0 1.17263548423 0.0 -4.0 1.0 0.0 1.0">
+      <shaderSet name="lambert13" type="lambert">
+         <shaderParams type="maya">
+            <param name="color" type="file" value="../textures/photo_7.jpg"/>
+            <param name="transparency" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="ambientColor" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="incandescence" type="color" valueB="0.0" valueG="0.0" valueR="0.0"/>
+            <param name="diffuse" type="float" value="0.800000011921"/>
+            <param name="translucence" type="float" value="0.0"/>
+         </shaderParams>
+         <geometry triMeshFile="pSphere12.mesh" vertexCount="0"/>
+      </shaderSet>
+   </mesh>
+</simplescene>
