@@ -24,7 +24,7 @@ TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/Cinder-3DTools/TriMesh
 
 To individually export geometry with world space coordinates, add a ``bool`` attribute called ``ciBakeTransform`` to a shape's direct transform parent.
 
-If there is a ```file``` connection attached to a shader's ```color``` attribute. The geometry's color will be exported as [1, 1, 1] in the data. The file path will be be included in the export:
+If there is a ```file``` connection attached to a shader's ```color``` attribute. The geometry's color will be exported as ```[1, 1, 1]``` in the data. The file path will be be included in the export:
 ```xml
 <param name="color" type="file" value="../textures/rg_grad.png"/>
 ```
