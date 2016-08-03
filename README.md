@@ -15,4 +15,8 @@ TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/Cinder-3DTools/TriMesh
 Example usage:
 ```
 std::vector<simplescene::Node> nodes = simplescene::load( getAssetPath( "Basic/Basic.xml" ) );
+...
+	for( auto& node : nodes ) {
+		node.draw();
+	}
 ```
