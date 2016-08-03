@@ -8,7 +8,6 @@ Currently, all paths are relative to the scene XML. An option will be added late
 
 The following options can be used to control the behavior of the exporter:
 * ```bakeTransfrom``` - Default is False. If set to True, the export will use the world space coordinates for geometry positions and normals.
-
 * ```angleWeightedNormals``` - Defaulti s False. If set to True, the normals will be angle weighted instead of averaged.
 
 
