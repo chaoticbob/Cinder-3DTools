@@ -3,7 +3,7 @@
 ## Maya ##
 TriMeshExporter is a simple and straightfoward exporter for polygon meshes from Maya to Cinder's TriMesh format. By default it exports geometry positions and normals in object (aka local) space with the tranform matrix written into the scene XML file. Options to control this behavior are in the next section.
 
-Currently, all paths are relative to the scene XML. An option will be added later to force absolute paths if desired. Basic properties of ```lambert``, ```blinn```, ```phong```, ```phongE```, and `anisotropic``` are exported as well. See the sample XML below.
+Currently, all paths are relative to the scene XML. An option will be added later to force absolute paths if desired. Basic properties of ```lambert```, ```blinn```, ```phong```, ```phongE```, and `anisotropic``` are exported as well. See the sample XML below.
 
 
 The following options can be used to control the behavior of the exporter.
