@@ -16,7 +16,7 @@ Example usage:
 ```
 std::vector<simplescene::Node> nodes = simplescene::load( getAssetPath( "Basic/Basic.xml" ) );
 ...
-	for( auto& node : nodes ) {
-		node.draw();
-	}
+for( auto& node : nodes ) {
+	node.draw();
+}
 ```
