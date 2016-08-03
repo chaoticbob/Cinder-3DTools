@@ -47,6 +47,7 @@
 #
 
 import maya.api.OpenMaya as OpenMaya
+import maya.cmds as cmds
 import array
 import math 
 import xml.dom.minidom as minidom
@@ -60,6 +61,7 @@ import xml.etree.cElementTree as ET
 # This class is generic. Should be usable outside of Maya.
 #
 class TriMesh( object ):
+	# noinspection PyPep8
 	POSITION    = 0x00000001
 	COLOR       = 0x00000002
 	TEX_COORD_0 = 0x00000004
@@ -262,7 +264,6 @@ class TriMesh( object ):
 		if self.getNumVertices() > 0:
 			self.indices.tofile( file )
 		# Write attributes
-		print( self.positions )
 		self.writeAttrib( file, TriMesh.POSITION, self.positionsDims, len( self.positions ), self.positions )
 		self.writeAttrib( file, TriMesh.COLOR, self.colorsDims, len( self.colors ), self.colors )
 		self.writeAttrib( file, TriMesh.NORMAL, self.normalsDims, len( self.normals ), self.normals )
@@ -279,6 +280,8 @@ class TriMesh( object ):
 	pass
 
 ## MeshInfo
+#
+#
 class MeshInfo( object ):
 	## c'tor
 	def __init__( self, transformDagPath = None, shapeDagPath = None ):
@@ -298,10 +301,14 @@ class MeshInfo( object ):
 	pass
 
 ## TriMeshExporter
+#
+#
 class TriMeshExporter( object ):
 	## c'tor
 	def __init__( self ):
 		self.basePath = None
+		self.bakeTranform = False
+		self.angleWeightedNormals = False
 		pass
 
 	## createFilePath
@@ -315,6 +322,8 @@ class TriMeshExporter( object ):
 			fileName = re.sub( "\|", "", fileName, count = 1 )
 		# Replace all remaining instances of | with _
 		fileName = re.sub( "\|", "_", fileName )
+		# Replace all instances of : with _
+		fileName = re.sub( ":", "_", fileName )		
 		# Add shaderTag
 		if shaderTag:
 			fileName = "%s_%s" % ( fileName, shaderTag )
@@ -323,6 +332,8 @@ class TriMeshExporter( object ):
 			fileName = os.path.join( path, fileName ) + ext	
 		else: 			
 			fileName = os.path.join( path, fileName ) + "." + ext	
+		# Replace all \ with /
+		fileName = fileName.replace( "\\", "/" )
 		# Return it!
 		return fileName
 		pass		
@@ -342,7 +353,8 @@ class TriMeshExporter( object ):
 
 	## createFilePath
 	def getColor( self, shaderNode ):
-		result = [[0.0, 0.0, 0.0], None]
+		# Default this to 1.0 instead of the Maya's 0.0 since Cinder's stock shader multiplies against color.
+		result = [[1.0, 1.0, 1.0], None]
 		# Get color plug
 		dstColorPlug = shaderNode.findPlug( "color", False )
 		# Texture or color
@@ -352,8 +364,9 @@ class TriMeshExporter( object ):
 			if "file" == srcColorNode.typeName:
 				fileNamePlug = srcColorNode.findPlug( "fileTextureName", False )
 				fileName = fileNamePlug.asString()
-				fileName = os.path.relpath( fileName, self.basePath )
-				result[1] = fileName
+				if fileName:
+					fileName = os.path.relpath( fileName, self.basePath )
+					result[1] = fileName
 		else:
 			colorR = shaderNode.findPlug( "colorR", False )
 			colorG = shaderNode.findPlug( "colorG", False )
@@ -363,35 +376,160 @@ class TriMeshExporter( object ):
 			result[0][2] = colorB.asFloat()
 		# Return
 		return result
+		pass 
+
+	@staticmethod 
+	def readFloatAttr( attrName, node, defaultValue ):
+		result = defaultValue 
+		if node.hasAttribute( attrName ):
+			plug = node.findPlug( attrName, False )
+			if plug:
+				result = plug.asFloat()
+				pass
+			pass
+		return float( result )
+		pass
+
+	@staticmethod 
+	def readBoolAttr( attrName, node, defaultValue ):
+		result = defaultValue 
+		if node.hasAttribute( attrName ):
+			plug = node.findPlug( attrName, False )
+			if plug:
+				result = plug.asFloat()
+				pass
+			pass
+		return bool( result )
+		pass			
+
+	@staticmethod
+	def populateFloatAttr( xmlParent, attrName, node, defaultValue ):
+		xml = ET.SubElement( xmlParent, "param", name = attrName )
+		xml.set( "type", "float" )		
+		value = TriMeshExporter.readFloatAttr( attrName, node, defaultValue )
+		xml.set( "value", str( value  ) )
+		pass
+
+	@staticmethod
+	def populateColorAttr( xmlParent, attrName, node, defaultValue ):
+		xml = ET.SubElement( xmlParent, "param", name = attrName )
+		xml.set( "type", "color" )		
+		valueR = TriMeshExporter.readFloatAttr( attrName + "R", node, defaultValue[0] )
+		valueG = TriMeshExporter.readFloatAttr( attrName + "G", node, defaultValue[1] )
+		valueB = TriMeshExporter.readFloatAttr( attrName + "B", node, defaultValue[2] )
+		xml.set( "valueR", str( valueR ) )
+		xml.set( "valueG", str( valueG ) )
+		xml.set( "valueB", str( valueB ) )
+		pass
+
+	@staticmethod
+	def populateBoolAttr( xmlParent, attrName, node, defaultValue ):
+		xml = ET.SubElement( xmlParent, "param", name = attrName )
+		xml.set( "type", "bool" )		
+		value = TriMeshExporter.readBoolAttr( attrName, node, defaultValue )
+		xml.set( "value", str( 1 if value else 0 ) )
+		pass		
+
+	def populateShaderParams( self, xmlParent, shaderNode ):
+		xml = ET.SubElement( xmlParent, "shaderParams" )
+		xml.set( "type", "maya" )
+		TriMeshExporter.populateColorAttr( xml, "color", shaderNode, [0.5, 0.5, 0.5] )
+		TriMeshExporter.populateColorAttr( xml, "transparency", shaderNode, [0.0, 0.0, 0.0] )
+		TriMeshExporter.populateColorAttr( xml, "ambientColor", shaderNode, [0.0, 0.0, 0.0] )
+		TriMeshExporter.populateColorAttr( xml, "incandescence", shaderNode, [0.0, 0.0, 0.0] )
+		TriMeshExporter.populateFloatAttr( xml, "diffuse", shaderNode, 0.300 )
+		TriMeshExporter.populateFloatAttr( xml, "translucence", shaderNode, 0.000 )
+		if "blinn" == shaderNode.typeName:
+			TriMeshExporter.populateFloatAttr( xml, "eccentricity", shaderNode, 0.300 )
+			TriMeshExporter.populateFloatAttr( xml, "specularRollOff", shaderNode, 0.700 )
+			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+		elif "phong" == shaderNode.typeName:
+			TriMeshExporter.populateFloatAttr( xml, "cosinePower", shaderNode, 20.000 )
+			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+		elif "phongE" == shaderNode.typeName:
+			TriMeshExporter.populateFloatAttr( xml, "roughness", shaderNode, 0.5 )
+			TriMeshExporter.populateFloatAttr( xml, "highlightSize", shaderNode, 0.5 )
+			TriMeshExporter.populateColorAttr( xml, "whiteness", shaderNode, [0.5, 0.5, 0.5] )
+			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+		elif "anisotropic" == shaderNode.typeName:
+			TriMeshExporter.populateFloatAttr( xml, "angle", shaderNode, 0.0 )
+			TriMeshExporter.populateFloatAttr( xml, "spreadX", shaderNode, 13.0 )
+			TriMeshExporter.populateFloatAttr( xml, "spreadY", shaderNode, 3.0 )
+			TriMeshExporter.populateFloatAttr( xml, "roughness", shaderNode, 7.0 )
+			TriMeshExporter.populateFloatAttr( xml, "fresnelRefractiveIndex", shaderNode, 6.0 )
+			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )			
+			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.500 )
+			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+			TriMeshExporter.populateBoolAttr( xml, "anisotropicReflectivity", shaderNode, True )
+			pass
 		pass
 
 	## createFilePath
-	def createTriMesh( self, mesh, meshData, polyFaces, colorRgb ):
-		points    = meshData["position"]
-		normals   = meshData["normal"]
-		texCoord0 = meshData["texCoord0"]
+	def createTriMesh( self, mesh, meshData, polyFaces, colorRgb, ciAttrs ):
+		# Decide coordinate systems
+		coordSys = OpenMaya.MSpace.kObject
+		if self.bakeTranform or ciAttrs["bakeTransform"]:
+			coordSys = OpenMaya.MSpace.kWorld		
+		# Mesh points
+		points = meshData["positions"]
 		# TriMesh
 		triMesh = TriMesh()
-		# Indices
-		for face in polyFaces:
-			vertices = mesh.getPolygonVertices( face )
-			for vertex in vertices:
-				triMesh.appendIndex( vertex )
-		# Positions and color
-		for P in points:
-			triMesh.appendPosition( P.x, P.y, P.z )
-			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
-		# Normals
-		for N in normals:
-			triMesh.appendPosition( N.x, N.y, N.z )
-		# TexCoords0
-		for uv in texCoord0:
-			triMesh.appendPosition( uv.x, uv.y )
+
+		for polyId in polyFaces:
+			polyVerts = mesh.getPolygonVertices( polyId )
+			faceNormals = mesh.getFaceVertexNormals( polyId, coordSys )
+			faceTangents = mesh.getFaceVertexTangents( polyId, coordSys )
+			numTris = len( polyVerts ) - 2
+			fv0 = 0
+			fv1 = 1
+			fv2 = 2
+			for i in range( 0, numTris ):
+				mv0 = polyVerts[fv0]
+				mv1 = polyVerts[fv1]
+				mv2 = polyVerts[fv2]
+				# Positions
+				P0 = points[mv0]
+				P1 = points[mv1]
+				P2 = points[mv2]
+				# Normals
+				N0 = faceNormals[fv0]
+				N1 = faceNormals[fv1]
+				N2 = faceNormals[fv2]
+				# UV
+				[u0,v0] = mesh.getPolygonUV( polyId, fv0 )
+				[u1,v1] = mesh.getPolygonUV( polyId, fv1 )
+				[u2,v2] = mesh.getPolygonUV( polyId, fv2 )
+ 				# Vertex 0 data
+				triMesh.appendPosition( P0.x, P0.y, P0.z )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N0.x, N0.y, N0.z )
+				triMesh.appendTexCoord0( u0, v0 );
+				# Vertex 1 data
+				triMesh.appendPosition( P1.x, P1.y, P1.z )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N1.x, N1.y, N1.z )
+				triMesh.appendTexCoord0( u1, v1 );
+				# Vertex 2 data
+				triMesh.appendPosition( P2.x, P2.y, P2.z )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N2.x, N2.y, N2.z )
+				triMesh.appendTexCoord0( u2, v2 );
+				# Increment to next triangle
+				fv1 += 1
+				fv2 += 1
+				pass
+			pass
 		return triMesh
 		pass
 
 	## createFilePath
-	def writeTriMeshFile( self, parentDagPath, xmlParent, path, mesh, meshData, shaderCount, shaderObj, polyFaces ):
+	def writeTriMeshFile( self, parentDagPath, xmlParent, path, mesh, meshData, shaderCount, shaderObj, polyFaces, ciAttrs ):
 		if not mesh:
 			return
 		# Get DAG path
@@ -401,19 +539,22 @@ class TriMeshExporter( object ):
 			shaderNode = self.getShaderNode( shaderObj )
 		except:
 			print( "Couldn't get surfaceShader node for %s" % dagPath.partialPathName() )
-			return			
+			return
+		# Write initial data to XML
+		xml = ET.SubElement( xmlParent, "shaderSet", name = shaderNode.name() )
+		xml.set( "type", shaderNode.typeName )			
 		# Get color
 		try:
 			[colorRgb, colorFile] = self.getColor( shaderNode )
 		except:
 			print( "Couldn't get color for %s" % dagPath.partialPathName() )
 			return
-		# Write initial data to XML
-		xml = ET.SubElement( xmlParent, "shaderSet", name = shaderNode.name() )
 		if None != colorFile:
-			xml.set( "surfaceShaderColorFile", colorFile )
+			xml.set( "colorTexture", colorFile.replace( "\\", "/" ) )
+		# Shader params
+		self.populateShaderParams( xml, shaderNode )			
 		# Get buffers
-		triMesh = self.createTriMesh( mesh, meshData, polyFaces, colorRgb )
+		triMesh = self.createTriMesh( mesh, meshData, polyFaces, colorRgb, ciAttrs )
 		# Write buffers
 		geoXml = ET.SubElement( xml, "geometry" )
 		geoXml.set( "vertexCount", str( triMesh.getNumVertices() ) ) 
@@ -429,32 +570,22 @@ class TriMeshExporter( object ):
 		pass
 
 
-	def getMeshData( self, mesh ):
-		print( mesh.getTriangles() )
-
-		[meshTriCounts, meshTriVertices] = mesh.getTriangles()
-		faceTrianglesVertices = []
-		vertexOffset = 0
-		for polyIdx in range( 0, len( meshTriCounts ) ):
-			vertexCount = 3 * meshTriCounts[polyIdx]
-			trianglesVerticess = array.array( "I" )
-			for vertexIdx in range( vertexOffset, vertexOffset + vertexCount ):
-				trianglesVerticess.append( meshTriVertices[vertexIdx] )
-				pass
-			faceTrianglesVertices.append( trianglesVerticess )
-			pass
-
-		print( faceTrianglesVertices )
-
+	def getMeshData( self, mesh, ciAttrs ):
+		# Decide coordinate systems
+		coordSys = OpenMaya.MSpace.kObject
+		if self.bakeTranform or ciAttrs["bakeTransform"]:
+			coordSys = OpenMaya.MSpace.kWorld
 		meshData = {}
-		meshData["position"]  = mesh.getFloatPoints()
-		meshData["normal"]    = mesh.getVertexNormals( False )
-		meshData["tangent"]   = mesh.getTangents
-		meshData["texCoord0"] = OpenMaya.MFloatPointArray()
-		[uArray, vArray] = mesh.getUVs()
-		for i in range( 0, len( uArray ) ):
-			meshData["texCoord0"].append( OpenMaya.MFloatPoint( uArray[i], vArray[i] ) )		
-			pass
+		meshData["positions"]  = mesh.getFloatPoints( coordSys )
+
+		#meshData["normals"]    = mesh.getVertexNormals( False, coordSys )
+		#meshData["tangents"]   = mesh.getTangents( coordSys )
+		#meshData["texCoords0"] = OpenMaya.MFloatPointArray()
+		#[uArray, vArray] = mesh.getUVs()
+		#for i in range( 0, len( uArray ) ):
+		#	meshData["texCoords0"].append( OpenMaya.MFloatPoint( uArray[i], vArray[i] ) )		
+		#	pass
+
 		return meshData
 		pass
 
@@ -469,7 +600,7 @@ class TriMeshExporter( object ):
 				shaderFaces[shaderObjIdx] = []
 				shaderFaces[shaderObjIdx].append( polyIdx )
 			pass
-		return shaderFaces
+		return [shaderObjs, polyInfos, shaderFaces]
 		pass
 
 	## createFilePath
@@ -482,24 +613,33 @@ class TriMeshExporter( object ):
 		# Transform data
 		transform = OpenMaya.MFnTransform( transformDagPath )
 		matrix = transform.transformation().asMatrix()
+		# Attributes
+		ciAttrs = self.getCinderAttributes( transformDagPath )
+		# Matrix elements
 		elements = []
-		for row in range( 0, 4 ):
-			for col in range( 0, 4 ):
-				value = matrix.getElement( row, col )
-				elements.append( float( value ) )
+		if self.bakeTranform or ciAttrs["bakeTransform"]:
+			for row in range( 0, 4 ):
+					for col in range( 0, 4 ):
+						value = 1 if row == col else 0
+						elements.append( float( value ) )			
+		else:
+			for row in range( 0, 4 ):
+				for col in range( 0, 4 ):
+					value = matrix.getElement( row, col )
+					elements.append( float( value ) )
 		xml.set( "transform", " ".join( map( str, elements ) ) )
 		# Get mesh data
-		mesh = OpenMaya.MFnMesh(shapeDagPath)
-		meshData = self.getMeshData( mesh )
+		mesh = OpenMaya.MFnMesh( shapeDagPath )
+		meshData = self.getMeshData( mesh, ciAttrs )
 		# Get connected shaders
 		instance = 0
-		shaderFaces = self.getShaderFaces( mesh, instance )
+		[shaderObjs, polyInfos, shaderFaces] = self.getShaderFaces( mesh, instance )
 		# Write TriMesh file
 		shaderCount = len( shaderFaces )
 		for shaderObjIdx in shaderFaces:
 			shaderObj = shaderObjs[shaderObjIdx]
 			polyFaces = shaderFaces[shaderObjIdx]
-			self.writeTriMeshFile( transformDagPath, xml, path, mesh, meshData, shaderCount, shaderObj, polyFaces )
+			self.writeTriMeshFile( transformDagPath, xml, path, mesh, meshData, shaderCount, shaderObj, polyFaces, ciAttrs )
 			pass
 		pass
 
@@ -519,15 +659,37 @@ class TriMeshExporter( object ):
 				pass
 			pass
 		return result
+		pass
+
+	def getCinderAttributes( self, transformDagPath ):
+		attrs = {}
+		attrs["bakeTransform"] = False
+		# Read attributes
+		transform = OpenMaya.MFnTransform( transformDagPath )
+		# ciBakeTransform
+		if transform.hasAttribute( "ciBakeTransform" ):
+			plug = transform.findPlug( "ciBakeTransform", False )
+			attrs["bakeTransform"] = plug.asBool()
+			pass			
+		return attrs
 		pass		
 
 	## createFilePath
-	def exportSelected( self, path, xmlName ):
+	def exportSelected( self, path, bakeTranform, angleWeightedNormals ):
 		self.basePath = path
+		self.bakeTranform = bakeTranform
+		self.angleWeightedNormals = angleWeightedNormals
 		selList = OpenMaya.MGlobal.getActiveSelectionList()
 		if selList.isEmpty():
 			print( "Nothing selected" )
 			return
+		# Create a directory using the scene name
+		sceneFileName = cmds.file( q = True, sceneName = True );
+		if sceneFileName is None:
+			sceneFileName = "untitled"
+			pass
+		[sceneFile, sceneExt] = os.path.splitext( os.path.basename( sceneFileName ) )
+		path = os.path.join( path, sceneFile )
 		print( "Exporting as Cinder TriMesh data to %s" % path )
 		if not os.path.exists( path ):
 			os.makedirs( path )
@@ -549,8 +711,25 @@ class TriMeshExporter( object ):
 		# Write XML
 		if len( list( xmlRoot ) ) > 0:
 			tree = ET.ElementTree( xmlRoot )
-			prettyXml = minidom.parseString( ET.tostring( xmlRoot ) ).toprettyxml( indent="   " )
-			file = open( os.path.join( path, xmlName + ".xml" ), "w" )
+			prettyXml = minidom.parseString( ET.tostring( xmlRoot ) ).toprettyxml( indent = "   " )
+			xmlFilePath = os.path.join( path, sceneFile + ".xml" )
+			xmlFilePath = xmlFilePath.replace( "\\", "/" )
+			file = open( xmlFilePath, "w" )
 			file.write( prettyXml )	
+			print( "Wrote %s" % xmlFilePath )
+			pass
+	pass
 
+def exportSelected( path, *args, **kwargs ):
+	# Error check arguments
+	validKeys = ["bakeTransform", "angleWeightedNormals"]
+	for key in kwargs.keys():
+		if key not in validKeys:
+			raise RuntimeError( "Unknown paramemter: %s" % key )
+	# Grab arguemnts
+	bakeTransform = kwargs.get( "bakeTransform", False )
+	angleWeightedNormals = kwargs.get( "angleWeightedNormals", False )
+	# Run exporter
+	exporter = TriMeshExporter()
+	exporter.exportSelected( path, bakeTransform, angleWeightedNormals )
 	pass
