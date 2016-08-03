@@ -378,6 +378,29 @@ class TriMeshExporter( object ):
 		return result
 		pass 
 
+	@staticmethod
+	def readAttrFileConnection( attrName, node, basePath ):
+		result = None
+		# Find plug
+		if node.hasAttribute( attrName ):
+			dstColorPlug = node.findPlug( attrName, False )
+			# Texture or color
+			if dstColorPlug.isConnected:
+				srcColorPlugs = dstColorPlug.connectedTo( True, False )
+				srcColorNode = OpenMaya.MFnDependencyNode( srcColorPlugs[0].node() )
+				if "file" == srcColorNode.typeName:
+					fileNamePlug = srcColorNode.findPlug( "fileTextureName", False )
+					fileName = fileNamePlug.asString()
+					if fileName:
+						fileName = os.path.relpath( fileName, basePath )
+						result = fileName
+						pass
+					pass
+				pass
+			pass
+		return result
+		pass
+
 	@staticmethod 
 	def readFloatAttr( attrName, node, defaultValue ):
 		result = defaultValue 
@@ -400,30 +423,39 @@ class TriMeshExporter( object ):
 				pass
 			pass
 		return bool( result )
-		pass			
+		pass	
 
-	@staticmethod
-	def populateFloatAttr( xmlParent, attrName, node, defaultValue ):
+	def populateFloatAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
-		xml.set( "type", "float" )		
-		value = TriMeshExporter.readFloatAttr( attrName, node, defaultValue )
-		xml.set( "value", str( value  ) )
+		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, self.basePath )
+		if fileName:
+			xml.set( "type", "file" )
+			xml.set( "value", fileName )
+		else:
+			xml.set( "type", "float" )
+			value = TriMeshExporter.readFloatAttr( attrName, node, defaultValue )
+			xml.set( "value", str( value  ) )
+			pass
 		pass
 
-	@staticmethod
-	def populateColorAttr( xmlParent, attrName, node, defaultValue ):
+	def populateColorAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
-		xml.set( "type", "color" )		
-		valueR = TriMeshExporter.readFloatAttr( attrName + "R", node, defaultValue[0] )
-		valueG = TriMeshExporter.readFloatAttr( attrName + "G", node, defaultValue[1] )
-		valueB = TriMeshExporter.readFloatAttr( attrName + "B", node, defaultValue[2] )
-		xml.set( "valueR", str( valueR ) )
-		xml.set( "valueG", str( valueG ) )
-		xml.set( "valueB", str( valueB ) )
+		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, self.basePath )
+		if fileName:
+			xml.set( "type", "file" )
+			xml.set( "value", fileName )
+		else:		
+			xml.set( "type", "color" )		
+			valueR = TriMeshExporter.readFloatAttr( attrName + "R", node, defaultValue[0] )
+			valueG = TriMeshExporter.readFloatAttr( attrName + "G", node, defaultValue[1] )
+			valueB = TriMeshExporter.readFloatAttr( attrName + "B", node, defaultValue[2] )
+			xml.set( "valueR", str( valueR ) )
+			xml.set( "valueG", str( valueG ) )
+			xml.set( "valueB", str( valueB ) )
+			pass
 		pass
 
-	@staticmethod
-	def populateBoolAttr( xmlParent, attrName, node, defaultValue ):
+	def populateBoolAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
 		xml.set( "type", "bool" )		
 		value = TriMeshExporter.readBoolAttr( attrName, node, defaultValue )
@@ -433,40 +465,40 @@ class TriMeshExporter( object ):
 	def populateShaderParams( self, xmlParent, shaderNode ):
 		xml = ET.SubElement( xmlParent, "shaderParams" )
 		xml.set( "type", "maya" )
-		TriMeshExporter.populateColorAttr( xml, "color", shaderNode, [0.5, 0.5, 0.5] )
-		TriMeshExporter.populateColorAttr( xml, "transparency", shaderNode, [0.0, 0.0, 0.0] )
-		TriMeshExporter.populateColorAttr( xml, "ambientColor", shaderNode, [0.0, 0.0, 0.0] )
-		TriMeshExporter.populateColorAttr( xml, "incandescence", shaderNode, [0.0, 0.0, 0.0] )
-		TriMeshExporter.populateFloatAttr( xml, "diffuse", shaderNode, 0.300 )
-		TriMeshExporter.populateFloatAttr( xml, "translucence", shaderNode, 0.000 )
+		self.populateColorAttr( xml, "color", shaderNode, [0.5, 0.5, 0.5] )
+		self.populateColorAttr( xml, "transparency", shaderNode, [0.0, 0.0, 0.0] )
+		self.populateColorAttr( xml, "ambientColor", shaderNode, [0.0, 0.0, 0.0] )
+		self.populateColorAttr( xml, "incandescence", shaderNode, [0.0, 0.0, 0.0] )
+		self.populateFloatAttr( xml, "diffuse", shaderNode, 0.300 )
+		self.populateFloatAttr( xml, "translucence", shaderNode, 0.000 )
 		if "blinn" == shaderNode.typeName:
-			TriMeshExporter.populateFloatAttr( xml, "eccentricity", shaderNode, 0.300 )
-			TriMeshExporter.populateFloatAttr( xml, "specularRollOff", shaderNode, 0.700 )
-			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
-			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
-			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+			self.populateFloatAttr( xml, "eccentricity", shaderNode, 0.300 )
+			self.populateFloatAttr( xml, "specularRollOff", shaderNode, 0.700 )
+			self.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			self.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			self.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
 		elif "phong" == shaderNode.typeName:
-			TriMeshExporter.populateFloatAttr( xml, "cosinePower", shaderNode, 20.000 )
-			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
-			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
-			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+			self.populateFloatAttr( xml, "cosinePower", shaderNode, 20.000 )
+			self.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			self.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			self.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
 		elif "phongE" == shaderNode.typeName:
-			TriMeshExporter.populateFloatAttr( xml, "roughness", shaderNode, 0.5 )
-			TriMeshExporter.populateFloatAttr( xml, "highlightSize", shaderNode, 0.5 )
-			TriMeshExporter.populateColorAttr( xml, "whiteness", shaderNode, [0.5, 0.5, 0.5] )
-			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
-			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
-			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+			self.populateFloatAttr( xml, "roughness", shaderNode, 0.5 )
+			self.populateFloatAttr( xml, "highlightSize", shaderNode, 0.5 )
+			self.populateColorAttr( xml, "whiteness", shaderNode, [0.5, 0.5, 0.5] )
+			self.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )
+			self.populateFloatAttr( xml, "reflectivity", shaderNode, 0.700 )
+			self.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
 		elif "anisotropic" == shaderNode.typeName:
-			TriMeshExporter.populateFloatAttr( xml, "angle", shaderNode, 0.0 )
-			TriMeshExporter.populateFloatAttr( xml, "spreadX", shaderNode, 13.0 )
-			TriMeshExporter.populateFloatAttr( xml, "spreadY", shaderNode, 3.0 )
-			TriMeshExporter.populateFloatAttr( xml, "roughness", shaderNode, 7.0 )
-			TriMeshExporter.populateFloatAttr( xml, "fresnelRefractiveIndex", shaderNode, 6.0 )
-			TriMeshExporter.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )			
-			TriMeshExporter.populateFloatAttr( xml, "reflectivity", shaderNode, 0.500 )
-			TriMeshExporter.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
-			TriMeshExporter.populateBoolAttr( xml, "anisotropicReflectivity", shaderNode, True )
+			self.populateFloatAttr( xml, "angle", shaderNode, 0.0 )
+			self.populateFloatAttr( xml, "spreadX", shaderNode, 13.0 )
+			self.populateFloatAttr( xml, "spreadY", shaderNode, 3.0 )
+			self.populateFloatAttr( xml, "roughness", shaderNode, 7.0 )
+			self.populateFloatAttr( xml, "fresnelRefractiveIndex", shaderNode, 6.0 )
+			self.populateColorAttr( xml, "specularColor", shaderNode, [0.5, 0.5, 0.5] )			
+			self.populateFloatAttr( xml, "reflectivity", shaderNode, 0.500 )
+			self.populateColorAttr( xml, "reflectedColor", shaderNode, [0.0, 0.0, 0.0] )
+			self.populateBoolAttr( xml, "anisotropicReflectivity", shaderNode, True )
 			pass
 		pass
 
@@ -549,8 +581,6 @@ class TriMeshExporter( object ):
 		except:
 			print( "Couldn't get color for %s" % dagPath.partialPathName() )
 			return
-		if None != colorFile:
-			xml.set( "colorTexture", colorFile.replace( "\\", "/" ) )
 		# Shader params
 		self.populateShaderParams( xml, shaderNode )			
 		# Get buffers
