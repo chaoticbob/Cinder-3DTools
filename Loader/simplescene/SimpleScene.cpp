@@ -68,7 +68,9 @@ void Node::draw()
 	}
 
 	gl::ScopedModelMatrix scopedModel;
-	gl::multModelMatrix( mTransform );
+	if( mTransformEnabled ) {
+		gl::multModelMatrix( mTransform );
+	}
 
 	if( mColorTexture ) {
 		gl::ScopedTextureBind scopedTexture( mColorTexture );

@@ -48,13 +48,19 @@ public:
 	Node( const ci::mat4 &transform, const ci::gl::BatchRef &batch, const ci::gl::Texture2dRef &colorTexture = ci::gl::Texture2dRef() );
 	virtual ~Node();
 
+	bool						isTransformEnabled() const { return mTransformEnabled; }
+	void						enableTransform( bool value = true ) { mTransformEnabled = value; }
+	void						disableTransform() { enableTransform( false ); }
+
 	const ci::mat4&				getTransform() const { return mTransform; }
 	const ci::gl::BatchRef&		getBatch() const { return mBatch; }	
 	const ci::gl::Texture2dRef&	getColorTexture() const { return mColorTexture; }
 
+
 	virtual void				draw();
 
 private:
+	bool						mTransformEnabled = true;
 	ci::mat4					mTransform;
 	ci::gl::BatchRef			mBatch;
 	ci::gl::Texture2dRef		mColorTexture;
