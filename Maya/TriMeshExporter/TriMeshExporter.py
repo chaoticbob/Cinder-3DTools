@@ -36,15 +36,16 @@
  POSSIBILITY OF SUCH DAMAGE.
 """
 
-#
-# import sys
-# sys.path.append( "C:/Users/hai/code/cinder/Cinder-3DTools/Maya/TriMeshExporter" )
-# import TriMeshExporter
-# reload( TriMeshExporter )
-# 
-# b = TriMeshExporter.TriMeshExporter()
-# b.exportSelected( "C:/Users/hai/code/temp/maya", "mydata" )
-#
+"""
+Usage:
+
+import sys
+sys.path.append( "C:/Users/hai/code/cinder/Cinder-3DTools/Maya/TriMeshExporter" )
+import TriMeshExporter
+reload( TriMeshExporter ) 
+TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/Cinder-3DTools/TriMeshViewer/assets" )
+
+"""
 
 import maya.api.OpenMaya as OpenMaya
 import maya.cmds as cmds
@@ -393,6 +394,7 @@ class TriMeshExporter( object ):
 					fileName = fileNamePlug.asString()
 					if fileName:
 						fileName = os.path.relpath( fileName, basePath )
+						fileName = fileName.replace( "\\" , "/" )
 						result = fileName
 						pass
 					pass
