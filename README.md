@@ -6,10 +6,10 @@ TriMeshExporter is a simple and straightfoward exporter for polygon meshes from 
 Currently, all paths are relative to the scene XML. An option will be added later to force absolute paths if desired. Basic properties of ```lambert```, ```blinn```, ```phong```, ```phongE```, and ```anisotropic``` are exported as well. See the sample XML below.
 
 
-The following options can be used to control the behavior of the exporter.
-```bakeTransfrom``` - Default is False. If set to True, the export will use the world space coordinates for geometry positions and normals.
+The following options can be used to control the behavior of the exporter:
+* ```bakeTransfrom``` - Default is False. If set to True, the export will use the world space coordinates for geometry positions and normals.
 
-```angleWeightedNormals``` - Defaulti s False. If set to True, the normals will be angle weighted instead of averaged.
+* ```angleWeightedNormals``` - Defaulti s False. If set to True, the normals will be angle weighted instead of averaged.
 
 
 Example usage:
