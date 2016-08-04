@@ -65,7 +65,7 @@ private:
 
 void TriMeshViewerApp::setup()
 {
-	mCam.lookAt( vec3( 2, 10, 20 ), vec3( 0, 0, 0 ) );
+	mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
 	mNodes = ss::load( getAssetPath( "Basic/Basic.xml" ) );
 }
 
@@ -91,4 +91,9 @@ void TriMeshViewerApp::draw()
 	}
 }
 
-CINDER_APP( TriMeshViewerApp, RendererGl )
+void prepareSettings( App::Settings *settings ) 
+{
+	settings->setWindowSize( 960, 720 );
+}
+
+CINDER_APP( TriMeshViewerApp, RendererGl, prepareSettings )
