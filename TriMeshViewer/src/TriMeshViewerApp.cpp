@@ -83,7 +83,7 @@ void TriMeshViewerApp::draw()
 	gl::enableDepth();
 
 	gl::setMatrices( mCam );
-	gl::rotate( 0.75f * getElapsedSeconds(), 0, 1, 0 );
+	gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
 	gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
 
 	for( auto& node : mNodes ) {
