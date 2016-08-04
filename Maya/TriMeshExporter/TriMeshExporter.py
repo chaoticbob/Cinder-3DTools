@@ -645,8 +645,7 @@ class TriMeshExporter( object ):
 		# Create mesh XML node
 		xml = ET.SubElement(xmlParent, "mesh", name = shapeDagPath.partialPathName())
 		# Transform data
-		transform = OpenMaya.MFnTransform( transformDagPath )
-		matrix = transform.transformation().asMatrix()
+		matrix = transformDagPath.inclusiveMatrix()
 		# Attributes
 		ciAttrs = self.getCinderAttributes( transformDagPath )
 		# Matrix elements
