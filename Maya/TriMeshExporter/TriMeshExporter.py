@@ -43,7 +43,7 @@ import sys
 sys.path.append( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/Maya/TriMeshExporter" )
 import TriMeshExporter
 reload( TriMeshExporter )
- TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/TriMeshViewer/assets" )
+TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/TriMeshViewer/assets" )
 
 """
 
