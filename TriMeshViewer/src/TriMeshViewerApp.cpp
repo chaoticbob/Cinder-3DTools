@@ -66,7 +66,7 @@ private:
 void TriMeshViewerApp::setup()
 {
 	mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
-	mNodes = ss::load( getAssetPath( "Basic/Basic.xml" ) );
+	mNodes = ss::load( getAssetPath( "Untitled_2/Untitled_2.xml" ) );
 }
 
 void TriMeshViewerApp::mouseDown( MouseEvent event )

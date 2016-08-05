@@ -113,25 +113,26 @@ std::vector<Node> load( const ci::fs::path &sceneXml )
 
 				// Find color texture
 				gl::Texture2dRef colorTexture;
-				auto shaderParamsXml = shaderSetXml / "shaderParams";
-				for( auto paramElem = shaderParamsXml.begin( "param" ); paramElem != shaderParamsXml.end(); ++paramElem ) {
-					auto paramXml = *paramElem;
-					std::string name = paramXml["name"];
-					std::string type = paramXml["type"];
-					std::string value = paramXml["value"];
-					if( ( "color" == name ) && ( "file" == type ) && ( ! value.empty() ) ) {
-						fs::path imagePath = dirName / value;
-						try {
-							colorTexture = gl::Texture2d::create( loadImage( imagePath ) );
-							CI_LOG_I( "Created texture using " << imagePath );
-						}
-						catch( const std::exception &e ) {
-							CI_LOG_E( "Failed to load texture at " << imagePath << " (" << e.what() << ")" );
+				if( shaderSetXml.hasChild( "shaderParams" ) ) {
+					auto shaderParamsXml = shaderSetXml / "shaderParams";
+					for( auto paramElem = shaderParamsXml.begin( "param" ); paramElem != shaderParamsXml.end(); ++paramElem ) {
+						auto paramXml = *paramElem;
+						std::string name = paramXml["name"];
+						std::string type = paramXml["type"];
+						std::string value = paramXml["value"];
+						if( ( "color" == name ) && ( "file" == type ) && ( ! value.empty() ) ) {
+							fs::path imagePath = dirName / value;
+							try {
+								colorTexture = gl::Texture2d::create( loadImage( imagePath ) );
+								CI_LOG_I( "Created texture using " << imagePath );
+							}
+							catch( const std::exception &e ) {
+								CI_LOG_E( "Failed to load texture at " << imagePath << " (" << e.what() << ")" );
+							}
 						}
 					}
 				}
-
-				
+								
 				TriMesh triMesh;
 				bool triMeshLoaded = false;
 				fs::path triMeshPath = dirName / std::string( geoXml["triMeshFile"] );

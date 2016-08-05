@@ -253,6 +253,10 @@ class TriMesh( object ):
 #
 class TriMeshExporter( object ):
 	def __init__( self ):
+		self.basePath = None
+		self.bakeTranform = False
+		self.angleWeightedNormals = False
+		self.xmlFilePath = None		
 		pass
 
 	## createFilePath
@@ -277,9 +281,52 @@ class TriMeshExporter( object ):
 		return fileName
 		pass			
 
-	def createTriMesh( self, polyObj ):
+	## createTriMesh
+	def createTriMesh( self, polyObj ):	
+		# Mesh points
+		points = polyObj.GetAllPoints()		
+		# Mesh normals
+		normals = polyObj.CreatePhongNormals()
+		print( normals )
 		# TriMesh
 		triMesh = TriMesh()
+
+		unitScale = 0.01
+		colorRgb = [0.5, 0.5, 0.5]
+
+		for poly in polyObj.GetAllPolygons():
+			mv0 = poly.c
+			mv1 = poly.b
+			mv2 = poly.a
+			# Positions
+			P0 = points[mv0] * unitScale 
+			P1 = points[mv1] * unitScale
+			P2 = points[mv2] * unitScale
+			# Normals
+			N0 = normals[mv0]
+			N1 = normals[mv1]
+			N2 = normals[mv2]
+			# UV
+			[u0,v0] = [0,0]
+			[u1,v1] = [0,0]
+			[u2,v2] = [0,0]
+			# Vertex 0 data
+			triMesh.appendPosition( P0[0], P0[1], P0[2] )
+			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+			triMesh.appendNormal( N0[0], N0[1], N0[2] )
+			triMesh.appendTexCoord0( u0, v0 )
+			# Vert[0] 1 data
+			triMesh.appendPosition( P1[0], P1[1], P1[2] )
+			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+			triMesh.appendNormal( N1[0], N1[1], N1[2] )
+			triMesh.appendTexCoord0( u1, v1 )
+			# Vert[0] 2 data
+			triMesh.appendPosition( P2[0], P2[1], P2[2] )
+			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+			triMesh.appendNormal( N2[0], N2[1], N2[2] )
+			triMesh.appendTexCoord0( u2, v2 )
+			pass
+
 		# Return
 		return triMesh
 		pass		
@@ -306,12 +353,32 @@ class TriMeshExporter( object ):
 
 	## exportMesh
 	def exportMesh( self, polyObj, path, xmlParent ):
+		# XML
 		xml = ET.SubElement( xmlParent, "mesh", name = polyObj.GetName() )
-		self.writeTriMeshFile( polyObj, path, xmlParent )
+		# Transform
+		# Matrix elements - FIXME: These are the same right now
+		elements = []
+		if self.bakeTranform:
+			for row in range( 0, 4 ):
+					for col in range( 0, 4 ):
+						value = 1 if row == col else 0
+						elements.append( float( value ) )			
+		else:
+			for row in range( 0, 4 ):
+					for col in range( 0, 4 ):
+						value = 1 if row == col else 0
+						elements.append( float( value ) )	
+		xml.set( "transform", " ".join( map( str, elements ) ) )		
+		# Write
+		self.writeTriMeshFile( polyObj, path, xml )
 		pass
 
 	## exportSelected
 	def exportSelected( self, path, bakeTranform, angleWeightedNormals ):
+		self.basePath = path
+		self.bakeTranform = bakeTranform
+		self.angleWeightedNormals = angleWeightedNormals
+
 		doc = c4d.documents.GetActiveDocument()
 
 		validObjectTypes = [
