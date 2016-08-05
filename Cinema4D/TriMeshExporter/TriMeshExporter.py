@@ -14,11 +14,16 @@ class TriMeshExporter( object ):
 		doc = c4d.documents.GetActiveDocument()
 	
 		selected = doc.GetActiveObjects( c4d.GETACTIVEOBJECTFLAGS_SELECTIONORDER )
-		for obj in selected:
+		for itObj in selected:
+			obj = itObj
 			if _c4d.OBJECT_POLYGON != obj.GetType():
-				print( "%s : %d" % ( obj.GetName(), obj.GetType() ) )
+				tmpObj = obj.GetClone()
+				tmpList = c4d.utils.SendModelingCommand( command = c4d.MCOMMAND_CURRENTSTATETOOBJECT, list = [tmpObj], mode = c4d.MODELINGCOMMANDMODE_ALL, doc = doc )
+				if len( tmpList ) > 0:
+					obj = tmpList[0]
 				pass
-
+			
+			print obj.GetAllPoints()
 		pass
 
 	# class TriMeshExporter 		
