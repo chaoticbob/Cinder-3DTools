@@ -61,13 +61,17 @@ public:
 private:
 	CameraPersp				mCam;
 	std::vector<ss::Node>	mNodes;
+
+	gl::Texture2dRef		mTex;
 };
 
 void TriMeshViewerApp::setup()
 {
 	//mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
-	mCam.lookAt( vec3( 0, 0, 15 ), vec3( 0, 0, 0 ) );
-	mNodes = ss::load( getAssetPath( "Untitled_2/Untitled_2.xml" ) );
+	mCam.lookAt( vec3( 0, 0, 1 ), vec3( 0, 0, 0 ) );
+	mNodes = ss::load( getAssetPath( "Untitled_1/Untitled_1.xml" ) );
+
+	mTex = gl::Texture2d::create( loadImage( getAssetPath( "textures/photo_1.jpg" ) ) );
 }
 
 void TriMeshViewerApp::mouseDown( MouseEvent event )
@@ -84,11 +88,13 @@ void TriMeshViewerApp::draw()
 	gl::enableDepth();
 
 	gl::setMatrices( mCam );
-	//gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
+	gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
 	gl::rotate( 0.0f * getElapsedSeconds(), 0, 1, 0 );
-	gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
+	//gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
 
 	for( auto& node : mNodes ) {
+		gl::ScopedTextureBind texBind( mTex, 0 );
+		node.getBatch()->getGlslProg()->uniform( "uTex0", 0 );
 		node.draw();
 	}
 }

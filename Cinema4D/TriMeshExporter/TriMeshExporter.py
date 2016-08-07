@@ -328,11 +328,15 @@ class TriMeshExporter( object ):
 			if uvwTag is not None:
 				uvwDict = uvwTag.GetSlow( polyIdx )
 				if uvwDict is not None:
-					[u0,v0] = [uvwDict["a"].x, 1.0 - uvwDict["a"].y]
-					[u1,v1] = [uvwDict["b"].x, 1.0 - uvwDict["b"].y]
-					[u2,v2] = [uvwDict["c"].x, 1.0 - uvwDict["c"].y]
+					#[u0,v0] = [uvwDict["a"].x, 1.0 - uvwDict["a"].y]
+					#[u1,v1] = [uvwDict["b"].x, 1.0 - uvwDict["b"].y]
+					#[u2,v2] = [uvwDict["c"].x, 1.0 - uvwDict["c"].y]
+					[u0,v0] = [1.0 - uvwDict["a"].x, -uvwDict["a"].y]
+					[u1,v1] = [1.0 - uvwDict["b"].x, -uvwDict["b"].y]
+					[u2,v2] = [1.0 - uvwDict["c"].x, -uvwDict["c"].y]
 					pass
 				pass
+			#print( "%f, %f" % ( u0, v0 ) );
 			# Vertex 0 data
 			triMesh.appendPosition( P0[0], P0[1], P0[2] )
 			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
@@ -400,7 +404,7 @@ class TriMeshExporter( object ):
 			elements.append( xform.v3.y )
 			elements.append( xform.v3.z )
 			elements.append( 0.0 )
-			elements.append(  xform.off.x * self.unitScale )
+			elements.append( -xform.off.x * self.unitScale )
 			elements.append(  xform.off.y * self.unitScale )
 			elements.append( -xform.off.z * self.unitScale )
 			elements.append( 1.0 )
@@ -440,7 +444,9 @@ class TriMeshExporter( object ):
 		for itObj in selected:
 			obj = itObj
 			objType = obj.GetType()
-			if _c4d.OBJECT_POLYGON != objType:
+			if _c4d.OBJECT_EMPTY_POLYGON == objType:
+				polyObjs.append( obj )
+			else:
 				if objType in validObjectTypes:
 					try:
 						tmpObj = obj.GetClone()
