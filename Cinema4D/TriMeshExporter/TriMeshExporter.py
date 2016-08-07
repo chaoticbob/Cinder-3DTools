@@ -288,9 +288,11 @@ class TriMeshExporter( object ):
 		# Mesh points
 		points = polyObj.GetAllPoints()		
 		print( len( points ) )
-		# Mesh normals - temporary for now
+		# Mesh normals
 		normals = polyObj.CreatePhongNormals()
 		print( len( normals ) )
+		# Mesh UVs
+		uvwTag = polyObj.GetTag( c4d.Tuvw )
 		# TriMesh
 		triMesh = TriMesh()
 
@@ -323,6 +325,14 @@ class TriMeshExporter( object ):
 			[u0,v0] = [0,0]
 			[u1,v1] = [0,0]
 			[u2,v2] = [0,0]
+			if uvwTag is not None:
+				uvwDict = uvwTag.GetSlow( polyIdx )
+				if uvwDict is not None:
+					[u0,v0] = [uvwDict["a"].x, 1.0 - uvwDict["a"].y]
+					[u1,v1] = [uvwDict["b"].x, 1.0 - uvwDict["b"].y]
+					[u2,v2] = [uvwDict["c"].x, 1.0 - uvwDict["c"].y]
+					pass
+				pass
 			# Vertex 0 data
 			triMesh.appendPosition( P0[0], P0[1], P0[2] )
 			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
