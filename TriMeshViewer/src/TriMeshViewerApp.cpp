@@ -68,8 +68,8 @@ private:
 void TriMeshViewerApp::setup()
 {
 	//mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
-	mCam.lookAt( vec3( 0, 0, 1 ), vec3( 0, 0, 0 ) );
-	mNodes = ss::load( getAssetPath( "Untitled_1/Untitled_1.xml" ) );
+	mCam.lookAt( vec3( 0, 4, 5 ), vec3( 0, 0, 0 ) );
+	mNodes = ss::load( getAssetPath( "Untitled_2/Untitled_2.xml" ) );
 
 	mTex = gl::Texture2d::create( loadImage( getAssetPath( "textures/photo_1.jpg" ) ) );
 }
