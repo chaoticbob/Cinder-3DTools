@@ -257,6 +257,8 @@ class TriMeshExporter( object ):
 		self.bakeTranform = False
 		self.angleWeightedNormals = False
 		self.xmlFilePath = None		
+
+		self.unitScale = 0.01
 		pass
 
 	## createFilePath
@@ -285,27 +287,38 @@ class TriMeshExporter( object ):
 	def createTriMesh( self, polyObj ):	
 		# Mesh points
 		points = polyObj.GetAllPoints()		
-		# Mesh normals
+		print( len( points ) )
+		# Mesh normals - temporary for now
 		normals = polyObj.CreatePhongNormals()
-		print( normals )
+		print( len( normals ) )
 		# TriMesh
 		triMesh = TriMesh()
 
-		unitScale = 0.01
 		colorRgb = [0.5, 0.5, 0.5]
 
-		for poly in polyObj.GetAllPolygons():
-			mv0 = poly.c
+		polys = polyObj.GetAllPolygons()
+		for polyIdx in range( 0, len( polys ) ):
+			# Polygon
+			poly = polys[polyIdx]
+			# Vertex indices
+			mv0 = poly.a
 			mv1 = poly.b
-			mv2 = poly.a
+			mv2 = poly.c
 			# Positions
-			P0 = points[mv0] * unitScale 
-			P1 = points[mv1] * unitScale
-			P2 = points[mv2] * unitScale
+			P0 = points[mv0] * self.unitScale 
+			P1 = points[mv1] * self.unitScale
+			P2 = points[mv2] * self.unitScale
+			#print( "P0", P0 )
+			#print( "P1", P1 )
+			#print( "P2", P2 )
 			# Normals
-			N0 = normals[mv0]
-			N1 = normals[mv1]
-			N2 = normals[mv2]
+			normalIdx = 4 * polyIdx
+			N0 = normals[normalIdx + 0]
+			N1 = normals[normalIdx + 1]
+			N2 = normals[normalIdx + 2]
+			#print( "N0", N0 )
+			#print( "N1", N1 )
+			#print( "N2", N2 )			
 			# UV
 			[u0,v0] = [0,0]
 			[u1,v1] = [0,0]
@@ -364,10 +377,24 @@ class TriMeshExporter( object ):
 						value = 1 if row == col else 0
 						elements.append( float( value ) )			
 		else:
-			for row in range( 0, 4 ):
-					for col in range( 0, 4 ):
-						value = 1 if row == col else 0
-						elements.append( float( value ) )	
+			xform = polyObj.GetMg()
+			elements.append( xform.v1.x )
+			elements.append( xform.v1.y )
+			elements.append( xform.v1.z )
+			elements.append( 0.0 )
+			elements.append( xform.v2.x )
+			elements.append( xform.v2.y )
+			elements.append( xform.v2.z )
+			elements.append( 0.0 )
+			elements.append( xform.v3.x )
+			elements.append( xform.v3.y )
+			elements.append( xform.v3.z )
+			elements.append( 0.0 )
+			elements.append(  xform.off.x * self.unitScale )
+			elements.append(  xform.off.y * self.unitScale )
+			elements.append( -xform.off.z * self.unitScale )
+			elements.append( 1.0 )
+			pass			
 		xml.set( "transform", " ".join( map( str, elements ) ) )		
 		# Write
 		self.writeTriMeshFile( polyObj, path, xml )

@@ -65,7 +65,8 @@ private:
 
 void TriMeshViewerApp::setup()
 {
-	mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
+	//mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
+	mCam.lookAt( vec3( 0, 0, 15 ), vec3( 0, 0, 0 ) );
 	mNodes = ss::load( getAssetPath( "Untitled_2/Untitled_2.xml" ) );
 }
 
@@ -83,7 +84,8 @@ void TriMeshViewerApp::draw()
 	gl::enableDepth();
 
 	gl::setMatrices( mCam );
-	gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
+	//gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
+	gl::rotate( 0.0f * getElapsedSeconds(), 0, 1, 0 );
 	gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
 
 	for( auto& node : mNodes ) {
