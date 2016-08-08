@@ -287,10 +287,8 @@ class TriMeshExporter( object ):
 	def createTriMesh( self, polyObj ):	
 		# Mesh points
 		points = polyObj.GetAllPoints()		
-		print( len( points ) )
 		# Mesh normals
 		normals = polyObj.CreatePhongNormals()
-		print( len( normals ) )
 		# Mesh UVs
 		uvwTag = polyObj.GetTag( c4d.Tuvw )
 		# TriMesh
@@ -378,9 +376,50 @@ class TriMeshExporter( object ):
 		print( "Exported %s to %s" % ( polyObj.GetName(), filePath ) )			
 		pass
 
+	def getShaderFaces( self, polyObj ):
+		shaderFaces = {}
+		# Get tags
+		tags = polyObj.GetTags()
+		# Find the necessary tags
+		textureTags = []
+		selectionTags = {}
+		for tag in tags:
+			if c4d.Ttexture == tag.GetType():
+				textureTags.append( tag )
+			elif c4d.Tpolygonselection == tag.GetType():
+				selectionTags[tag.GetName()] = tag
+				pass
+			pass
+
+		restrictedTextureTags = []
+		for tag in textureTags:
+			print tag
+			#if tag[c4d.TEXTURETAG_RESTRICTION] is not None:
+			#	value = tag[c4d.TEXTURETAG_RESTRICTION]
+			#	if value in selectionTags.keys():
+			#		print tag.GetName()
+			#		pass
+			#	pass
+			pass
+
+		polyCount = polyObj.GetPolygonCount()
+		unusedFaces = [i for i in range( polyCount )]
+
+		if polyCount > 0:
+			pass
+
+		if len( unusedFaces ) > 0:
+			shaderFaces[None] = unusedFaces
+			pass
+
+		return shaderFaces
+		#@for texTag in textureTags:
+		#	#print( "%s : %s" % ( texTag.GetName(), texTag[c4d.TEXTURETAG_RESTRICTION] ) )
+		#	print( "%s : %s" % ( texTag.GetName(), texTag.GetMaterial().GetName() ) )
+		pass
+
 	## exportMesh
 	def exportMesh( self, polyObj, path, xmlParent ):
-		# XML
 		xml = ET.SubElement( xmlParent, "mesh", name = polyObj.GetName() )
 		# Transform
 		# Matrix elements - FIXME: These are the same right now
@@ -409,9 +448,14 @@ class TriMeshExporter( object ):
 			elements.append( -xform.off.z * self.unitScale )
 			elements.append( 1.0 )
 			pass			
-		xml.set( "transform", " ".join( map( str, elements ) ) )		
-		# Write
-		self.writeTriMeshFile( polyObj, path, xml )
+		xml.set( "transform", " ".join( map( str, elements ) ) )
+		# Data
+		shaderFaces = self.getShaderFaces( polyObj )
+		# Write TriMesh file
+		for textureFace in shaderFaces.keys():
+			print textureFace
+			pass
+		#self.writeTriMeshFile( polyObj, path, xml )
 		pass
 
 	## exportSelected
@@ -441,6 +485,10 @@ class TriMeshExporter( object ):
 		polyObjs = []
 	
 		selected = doc.GetActiveObjects( c4d.GETACTIVEOBJECTFLAGS_SELECTIONORDER )
+		if 0 == len( selected ):
+			print( "Nothing selected" )
+			return
+
 		for itObj in selected:
 			obj = itObj
 			objType = obj.GetType()
@@ -467,6 +515,8 @@ class TriMeshExporter( object ):
 			if obj is not None:
 				polyObjs.append( obj )
 				pass
+			pass
+
 
 		# Create a directory using the scene name
 		sceneFileName = doc.GetDocumentName()
