@@ -376,8 +376,8 @@ class TriMeshExporter( object ):
 		print( "Exported %s to %s" % ( polyObj.GetName(), filePath ) )			
 		pass
 
-	def getShaderFaces( self, polyObj ):
-		shaderFaces = {}
+	def getMaterialFaces( self, polyObj ):
+		materialFaces = []
 		# Get tags
 		tags = polyObj.GetTags()
 		# Find the necessary tags
@@ -385,37 +385,74 @@ class TriMeshExporter( object ):
 		selectionTags = {}
 		for tag in tags:
 			if c4d.Ttexture == tag.GetType():
-				textureTags.append( tag )
+				textureTags.append( tag ) 
 			elif c4d.Tpolygonselection == tag.GetType():
 				selectionTags[tag.GetName()] = tag
 				pass
 			pass
 
-		restrictedTextureTags = []
-		for tag in textureTags:
-			print tag
-			#if tag[c4d.TEXTURETAG_RESTRICTION] is not None:
-			#	value = tag[c4d.TEXTURETAG_RESTRICTION]
-			#	if value in selectionTags.keys():
-			#		print tag.GetName()
-			#		pass
-			#	pass
-			pass
-
 		polyCount = polyObj.GetPolygonCount()
 		unusedFaces = [i for i in range( polyCount )]
 
-		if polyCount > 0:
+		restrictedTextureTags = []
+		if len( selectionTags ) > 0:
+			uniqueSelections = []
+			for textureTag in textureTags:
+				if textureTag[c4d.TEXTURETAG_RESTRICTION] is not None:
+					selectionName = textureTag[c4d.TEXTURETAG_RESTRICTION]
+					if ( selectionName in selectionTags.keys() ) and ( selectionName not in uniqueSelections ):
+						uniqueSelections.append( selectionName )
+						restrictedTextureTags.append( textureTag )
+						pass
+					pass
+				pass			
+		else:
+			# If there's only one texture tag, it will apply to all faces.
+			if 1 == len( textureTags ):
+				material = textureTags[0].GetMaterial()
+				faces = list( unusedFaces )
+				del unusedFaces[:]
+				materialFaces.append( { "material" : material, "faces" : faces } )
+				pass
+
+		for textureTag in restrictedTextureTags:
+			selectionName = textureTag[c4d.TEXTURETAG_RESTRICTION]
+			print( selectionName )
+			selectedFaces = selectionTags[selectionName].GetBaseSelect()
+			material = textureTag.GetMaterial()
+			faces = []
+			for faceIdx in range( polyCount ):
+				#if selectedFaces.IsSelected( faceIdx ):
+				#	faces.append( faceIdx )
+				#	unusedFaces.remove( faceIdx )
+				#	pass
+				if selectedFaces.IsSelected( faceIdx ):
+					faces.append( faceIdx )
+				pass
+			print faces
+			if len( faces ) > 0:
+				materialFaces.append( { "material" : material, "faces" : faces } )	
 			pass
+
+		#restrictedTextureTags = []
+		#if len( selectionTags ) > 0:
+		#	uniqueSelections = []
+		#	for tag in textureTags:
+		#		if tag[c4d.TEXTURETAG_RESTRICTION] is not None:
+		#			value = tag[c4d.TEXTURETAG_RESTRICTION]
+		#			if ( value in selectionTags.keys() ) and ( value not in uniqueSelections ):
+		#				uniqueSelections.append( value )
+		#				restrictedTextureTags.append( tag )
+		#				pass
+		#			pass
+		#		pass
+		#	pass
 
 		if len( unusedFaces ) > 0:
-			shaderFaces[None] = unusedFaces
+			materialFaces.append( { "material" : None, "faces" : unusedFaces } )
 			pass
 
-		return shaderFaces
-		#@for texTag in textureTags:
-		#	#print( "%s : %s" % ( texTag.GetName(), texTag[c4d.TEXTURETAG_RESTRICTION] ) )
-		#	print( "%s : %s" % ( texTag.GetName(), texTag.GetMaterial().GetName() ) )
+		return materialFaces
 		pass
 
 	## exportMesh
@@ -450,10 +487,10 @@ class TriMeshExporter( object ):
 			pass			
 		xml.set( "transform", " ".join( map( str, elements ) ) )
 		# Data
-		shaderFaces = self.getShaderFaces( polyObj )
+		materialFaces = self.getMaterialFaces( polyObj )
 		# Write TriMesh file
-		for textureFace in shaderFaces.keys():
-			print textureFace
+		for materialFace in materialFaces:
+			print materialFace["material"]
 			pass
 		#self.writeTriMeshFile( polyObj, path, xml )
 		pass
@@ -501,7 +538,7 @@ class TriMeshExporter( object ):
 						tmpList = c4d.utils.SendModelingCommand( command = c4d.MCOMMAND_CURRENTSTATETOOBJECT, list = [tmpObj], mode = c4d.MODELINGCOMMANDMODE_ALL, doc = doc )
 						c4d.utils.SendModelingCommand( command = c4d.MCOMMAND_TRIANGULATE, list = tmpList, doc = doc )
 						if len( tmpList ) > 0:
-							obj = tmpList[0]
+							polyObjs.append( tmpList[0] )
 							pass
 					except Exception, e:
 						print( "Failed to convert %s (type=%d) to triangles: %s" % ( obj.GetName(), obj.GetType(), e ) )
@@ -512,9 +549,9 @@ class TriMeshExporter( object ):
 					obj = None
 					pass
 
-			if obj is not None:
-				polyObjs.append( obj )
-				pass
+			#if obj is not None:
+			#	polyObjs.append( obj )
+			#	pass
 			pass
 
 
