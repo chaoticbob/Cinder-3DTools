@@ -262,7 +262,7 @@ class TriMeshExporter( object ):
 		pass
 
 	## createFilePath
-	def createFilePath( self, polyObj, path, ext ):
+	def createFilePath( self, polyObj, path, materialName, ext ):
 		# Use object name
 		fileName = polyObj.GetName()
 		# Remove the first instance of | 
@@ -271,7 +271,10 @@ class TriMeshExporter( object ):
 		# Replace all remaining instances of | with _
 		fileName = re.sub( "\|", "_", fileName )
 		# Replace all instances of : with _
-		fileName = re.sub( ":", "_", fileName )		
+		fileName = re.sub( ":", "_", fileName )
+		# Add material name
+		if materialName:
+			fileName = "%s_%s" % ( fileName, materialName )	
 		# Create full path
 		if ext.startswith( "." ):
 			fileName = os.path.join( path, fileName ) + ext	
@@ -284,7 +287,7 @@ class TriMeshExporter( object ):
 		pass			
 
 	## createTriMesh
-	def createTriMesh( self, polyObj ):	
+	def createTriMesh( self, polyObj, materialFaces ):
 		# Mesh points
 		points = polyObj.GetAllPoints()		
 		# Mesh normals
@@ -297,9 +300,11 @@ class TriMeshExporter( object ):
 		colorRgb = [0.5, 0.5, 0.5]
 
 		polys = polyObj.GetAllPolygons()
-		for polyIdx in range( 0, len( polys ) ):
+
+		polyFaces = materialFaces["faces"]
+		for polyId in polyFaces:
 			# Polygon
-			poly = polys[polyIdx]
+			poly = polys[polyId]
 			# Vertex indices
 			mv0 = poly.a
 			mv1 = poly.b
@@ -312,7 +317,7 @@ class TriMeshExporter( object ):
 			#print( "P1", P1 )
 			#print( "P2", P2 )
 			# Normals
-			normalIdx = 4 * polyIdx
+			normalIdx = 4 * polyId
 			N0 = normals[normalIdx + 0]
 			N1 = normals[normalIdx + 1]
 			N2 = normals[normalIdx + 2]
@@ -324,7 +329,7 @@ class TriMeshExporter( object ):
 			[u1,v1] = [0,0]
 			[u2,v2] = [0,0]
 			if uvwTag is not None:
-				uvwDict = uvwTag.GetSlow( polyIdx )
+				uvwDict = uvwTag.GetSlow( polyId )
 				if uvwDict is not None:
 					#[u0,v0] = [uvwDict["a"].x, 1.0 - uvwDict["a"].y]
 					#[u1,v1] = [uvwDict["b"].x, 1.0 - uvwDict["b"].y]
@@ -356,17 +361,24 @@ class TriMeshExporter( object ):
 		return triMesh
 		pass		
 
-	def writeTriMeshFile( self, polyObj, path, xmlParent ):
+	def writeTriMeshFile( self, polyObj, materialFaces, path, xmlParent ):
 		# Write initial data to XML
 		xml = ET.SubElement( xmlParent, "shaderSet", name = polyObj.GetName() )
 		xml.set( "type", "lambert" )			
 		# Get buffers
-		triMesh = self.createTriMesh( polyObj );
+		triMesh = self.createTriMesh( polyObj, materialFaces );
 		# Write buffers
 		geoXml = ET.SubElement( xml, "geometry" )
 		geoXml.set( "vertexCount", str( triMesh.getNumVertices() ) ) 
+		# Get material name
+		material = materialFaces["material"]
+		materialName = None
+		if material:
+			materialName = material.GetName()
+			materialName = materialName.replace( ".", "_" )
+			materialName = materialName.replace( " ", "_" )
 		# Generate file path
-		filePath = self.createFilePath( polyObj, path, ".mesh" );
+		filePath = self.createFilePath( polyObj, path, materialName, ".mesh" );
 		triMesh.write( filePath )
 		# Add triMeshFile attribute 
 		relFilePath = os.path.relpath( filePath, os.path.dirname( self.xmlFilePath ) )
@@ -386,8 +398,10 @@ class TriMeshExporter( object ):
 		for tag in tags:
 			if c4d.Ttexture == tag.GetType():
 				textureTags.append( tag ) 
+				print( "Found texture tag: %s" % tag.GetName() )
 			elif c4d.Tpolygonselection == tag.GetType():
 				selectionTags[tag.GetName()] = tag
+				print( "Found selection tag: %s" % tag.GetName() )
 				pass
 			pass
 
@@ -422,14 +436,15 @@ class TriMeshExporter( object ):
 			material = textureTag.GetMaterial()
 			faces = []
 			for faceIdx in range( polyCount ):
-				#if selectedFaces.IsSelected( faceIdx ):
-				#	faces.append( faceIdx )
-				#	unusedFaces.remove( faceIdx )
-				#	pass
 				if selectedFaces.IsSelected( faceIdx ):
 					faces.append( faceIdx )
+					try:
+						unusedFaces.remove( faceIdx )
+					except ValueError:
+						# remove will throw if th evalue isn't found - just ignore it.
+						pass
+					pass
 				pass
-			print faces
 			if len( faces ) > 0:
 				materialFaces.append( { "material" : material, "faces" : faces } )	
 			pass
@@ -487,10 +502,10 @@ class TriMeshExporter( object ):
 			pass			
 		xml.set( "transform", " ".join( map( str, elements ) ) )
 		# Data
-		materialFaces = self.getMaterialFaces( polyObj )
+		materialFacesList = self.getMaterialFaces( polyObj )
 		# Write TriMesh file
-		for materialFace in materialFaces:
-			print materialFace["material"]
+		for materialFaces in materialFacesList:
+			self.writeTriMeshFile( polyObj, materialFaces, path, xml )
 			pass
 		#self.writeTriMeshFile( polyObj, path, xml )
 		pass
