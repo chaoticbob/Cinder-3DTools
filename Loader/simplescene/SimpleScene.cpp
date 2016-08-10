@@ -69,6 +69,7 @@ void Node::draw()
 
 	gl::ScopedModelMatrix scopedModel;
 	if( mTransformEnabled ) {
+		gl::rotate( 3.141592, vec3( 0, 1, 0 ) );
 		gl::multModelMatrix( mTransform );
 	}
 

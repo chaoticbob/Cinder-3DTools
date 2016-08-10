@@ -1,4 +1,51 @@
 
+"""
+import py_compile
+py_compile.compile( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/Cinema4D/TriMeshExporter/TriMeshExporter.py" )
+
+import sys
+sys.path.append( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/Cinema4D/TriMeshExporter" )
+import TriMeshExporter
+reload( TriMeshExporter )
+ 
+TriMeshExporter.exportSelected( "C:/Users/hai/code/cinder/cinder_master/blocks/Cinder-3DTools/TriMeshViewer/assets" )
+"""
+
+"""
+import c4d
+#Welcome to the world of Python
+
+
+def main():
+    doc = c4d.documents.GetActiveDocument()
+    obj = doc.GetActiveObject()
+    
+    # get object
+    #obj = op.GetObject()
+    # get number of polygons on object.
+    poly_count = obj.GetPolygonCount()
+    
+    # get selected polys
+    sel_polys = obj.GetPolygonS()
+    
+    # put polys into a list of booles. This
+    # will hold a True value if poly is selected
+    # otherwise it will hold a False value
+    list_polys = sel_polys.GetAll(poly_count)
+    
+    # loop through polys
+    for i in xrange(poly_count):
+        
+        # if the list holds a True value
+        if list_polys[i]:
+            
+            # print the index of the Poly.
+            print "Poly at index %i is selected." % (i)
+            
+            
+main()
+"""
+
 import c4d
 import array
 import math 
@@ -287,7 +334,9 @@ class TriMeshExporter( object ):
 		pass			
 
 	## createTriMesh
-	def createTriMesh( self, polyObj, materialFaces ):
+	def createTriMesh( self, polyObj, polyFaces, colorRgb ):
+		# All polygons
+		polys = polyObj.GetAllPolygons()		
 		# Mesh points
 		points = polyObj.GetAllPoints()		
 		# Mesh normals
@@ -296,82 +345,102 @@ class TriMeshExporter( object ):
 		uvwTag = polyObj.GetTag( c4d.Tuvw )
 		# TriMesh
 		triMesh = TriMesh()
-
-		colorRgb = [0.5, 0.5, 0.5]
-
-		polys = polyObj.GetAllPolygons()
-
-		polyFaces = materialFaces["faces"]
+		#colorRgb = [0.5, 0.5, 0.5]
+		# Polygon faces attached to current material
+		#polyFaces = materialFaces["faces"]
 		for polyId in polyFaces:
 			# Polygon
 			poly = polys[polyId]
-			# Vertex indices
-			mv0 = poly.a
-			mv1 = poly.b
-			mv2 = poly.c
-			# Positions
-			P0 = points[mv0] * self.unitScale 
-			P1 = points[mv1] * self.unitScale
-			P2 = points[mv2] * self.unitScale
-			#print( "P0", P0 )
-			#print( "P1", P1 )
-			#print( "P2", P2 )
-			# Normals
+			# Polygon vertex indices, normals, and UVs for triangulation
+			polyVerts = [poly.a, poly.b, poly.c]
 			normalIdx = 4 * polyId
-			N0 = normals[normalIdx + 0]
-			N1 = normals[normalIdx + 1]
-			N2 = normals[normalIdx + 2]
-			#print( "N0", N0 )
-			#print( "N1", N1 )
-			#print( "N2", N2 )			
-			# UV
-			[u0,v0] = [0,0]
-			[u1,v1] = [0,0]
-			[u2,v2] = [0,0]
-			if uvwTag is not None:
-				uvwDict = uvwTag.GetSlow( polyId )
-				if uvwDict is not None:
-					#[u0,v0] = [uvwDict["a"].x, 1.0 - uvwDict["a"].y]
-					#[u1,v1] = [uvwDict["b"].x, 1.0 - uvwDict["b"].y]
-					#[u2,v2] = [uvwDict["c"].x, 1.0 - uvwDict["c"].y]
-					[u0,v0] = [1.0 - uvwDict["a"].x, -uvwDict["a"].y]
-					[u1,v1] = [1.0 - uvwDict["b"].x, -uvwDict["b"].y]
-					[u2,v2] = [1.0 - uvwDict["c"].x, -uvwDict["c"].y]
+			polyNormals = [normals[normalIdx + 0], normals[normalIdx + 1], normals[normalIdx + 2] ]
+			polyUvs = ["a", "b", "c"]
+			if not poly.IsTriangle():
+				polyVerts.append( poly.d )
+				polyNormals.append( normals[normalIdx + 3] )
+				polyUvs.append( "d" )
+			# Number of triangles and poly relative indices
+			numTris = len( polyVerts ) - 2
+			fv0 = 0
+			fv1 = 1
+			fv2 = 2
+			for i in range( numTris ):
+				# Vertex indices
+				mv0 = polyVerts[fv0]
+				mv1 = polyVerts[fv1]
+				mv2 = polyVerts[fv2]
+				# Positions
+				P0 = points[mv0] * self.unitScale 
+				P1 = points[mv1] * self.unitScale
+				P2 = points[mv2] * self.unitScale
+				#print( "P0", P0 )
+				#print( "P1", P1 )
+				#print( "P2", P2 )
+				# Normals
+				N0 = polyNormals[fv0]
+				N1 = polyNormals[fv1]
+				N2 = polyNormals[fv2]
+				#print( "N0", N0 )
+				#print( "N1", N1 )
+				#print( "N2", N2 )			
+				# UV
+				[u0,v0] = [0,0]
+				[u1,v1] = [0,0]
+				[u2,v2] = [0,0]
+				if uvwTag is not None:
+					uvwDict = uvwTag.GetSlow( polyId )
+					if uvwDict is not None:
+						uv0 = uvwDict[polyUvs[fv0]]
+						uv1 = uvwDict[polyUvs[fv1]]
+						uv2 = uvwDict[polyUvs[fv2]]
+						[u0,v0] = [1.0 -uv0.x, -uv0.y]
+						[u1,v1] = [1.0 -uv1.x, -uv1.y]
+						[u2,v2] = [1.0 -uv2.x, -uv2.y]
+						pass
 					pass
+				#print( "%f, %f" % ( u0, v0 ) );
+				# Vertex 0 data
+				triMesh.appendPosition( P0[0], P0[1], P0[2] )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N0[0], N0[1], N0[2] )
+				triMesh.appendTexCoord0( u0, v0 )
+				# Vert[0] 1 data
+				triMesh.appendPosition( P1[0], P1[1], P1[2] )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N1[0], N1[1], N1[2] )
+				triMesh.appendTexCoord0( u1, v1 )
+				# Vert[0] 2 data
+				triMesh.appendPosition( P2[0], P2[1], P2[2] )
+				triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
+				triMesh.appendNormal( N2[0], N2[1], N2[2] )
+				triMesh.appendTexCoord0( u2, v2 )
+				# Increment to next triangle
+				fv1 += 1
+				fv2 += 1				
 				pass
-			#print( "%f, %f" % ( u0, v0 ) );
-			# Vertex 0 data
-			triMesh.appendPosition( P0[0], P0[1], P0[2] )
-			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
-			triMesh.appendNormal( N0[0], N0[1], N0[2] )
-			triMesh.appendTexCoord0( u0, v0 )
-			# Vert[0] 1 data
-			triMesh.appendPosition( P1[0], P1[1], P1[2] )
-			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
-			triMesh.appendNormal( N1[0], N1[1], N1[2] )
-			triMesh.appendTexCoord0( u1, v1 )
-			# Vert[0] 2 data
-			triMesh.appendPosition( P2[0], P2[1], P2[2] )
-			triMesh.appendRgb( colorRgb[0], colorRgb[1], colorRgb[2] )
-			triMesh.appendNormal( N2[0], N2[1], N2[2] )
-			triMesh.appendTexCoord0( u2, v2 )
 			pass
 
 		# Return
 		return triMesh
 		pass		
 
-	def writeTriMeshFile( self, polyObj, materialFaces, path, xmlParent ):
+	#def writeTriMeshFile( self, polyObj, materialFaces, path, xmlParent ):
+	def writeTriMeshFile( self, xmlParent, path, polyObj, material, polyFaces ):
 		# Write initial data to XML
 		xml = ET.SubElement( xmlParent, "shaderSet", name = polyObj.GetName() )
-		xml.set( "type", "lambert" )			
+		xml.set( "type", material.GetName() if material else "" )
+		# Get color
+		colorRgb = [0.8, 0.8, 0.8]
+		if material and material[c4d.MATERIAL_USE_COLOR]:
+			c = material[c4d.MATERIAL_COLOR_COLOR]
+			colorRgb = [c.x, c.y, c.z]
 		# Get buffers
-		triMesh = self.createTriMesh( polyObj, materialFaces );
+		triMesh = self.createTriMesh( polyObj, polyFaces, colorRgb );
 		# Write buffers
 		geoXml = ET.SubElement( xml, "geometry" )
 		geoXml.set( "vertexCount", str( triMesh.getNumVertices() ) ) 
 		# Get material name
-		material = materialFaces["material"]
 		materialName = None
 		if material:
 			materialName = material.GetName()
@@ -449,20 +518,6 @@ class TriMeshExporter( object ):
 				materialFaces.append( { "material" : material, "faces" : faces } )	
 			pass
 
-		#restrictedTextureTags = []
-		#if len( selectionTags ) > 0:
-		#	uniqueSelections = []
-		#	for tag in textureTags:
-		#		if tag[c4d.TEXTURETAG_RESTRICTION] is not None:
-		#			value = tag[c4d.TEXTURETAG_RESTRICTION]
-		#			if ( value in selectionTags.keys() ) and ( value not in uniqueSelections ):
-		#				uniqueSelections.append( value )
-		#				restrictedTextureTags.append( tag )
-		#				pass
-		#			pass
-		#		pass
-		#	pass
-
 		if len( unusedFaces ) > 0:
 			materialFaces.append( { "material" : None, "faces" : unusedFaces } )
 			pass
@@ -495,9 +550,9 @@ class TriMeshExporter( object ):
 			elements.append( xform.v3.y )
 			elements.append( xform.v3.z )
 			elements.append( 0.0 )
-			elements.append( -xform.off.x * self.unitScale )
-			elements.append(  xform.off.y * self.unitScale )
-			elements.append( -xform.off.z * self.unitScale )
+			elements.append( xform.off.x * self.unitScale )
+			elements.append( xform.off.y * self.unitScale )
+			elements.append( xform.off.z * self.unitScale )
 			elements.append( 1.0 )
 			pass			
 		xml.set( "transform", " ".join( map( str, elements ) ) )
@@ -505,7 +560,9 @@ class TriMeshExporter( object ):
 		materialFacesList = self.getMaterialFaces( polyObj )
 		# Write TriMesh file
 		for materialFaces in materialFacesList:
-			self.writeTriMeshFile( polyObj, materialFaces, path, xml )
+			material = materialFaces["material"]
+			polyFaces = materialFaces["faces"]
+			self.writeTriMeshFile( xml, path, polyObj, material, polyFaces )
 			pass
 		#self.writeTriMeshFile( polyObj, path, xml )
 		pass
