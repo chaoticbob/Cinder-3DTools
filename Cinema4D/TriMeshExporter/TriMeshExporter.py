@@ -331,7 +331,60 @@ class TriMeshExporter( object ):
 		fileName = fileName.replace( "\\", "/" )
 		# Return it!
 		return fileName
-		pass			
+		pass
+
+	def getColor( self, material ):
+		# Default this to 1.0 instead of the Maya's 0.0 since Cinder's stock shader multiplies against color.
+		result = [[1.0, 1.0, 1.0], None]
+
+		if material and material[c4d.MATERIAL_USE_COLOR]:
+			shader = material[c4d.MATERIAL_COLOR_SHADER]
+			if shader and ( c4d.Xbitmap == shader.GetType() ) and shader[c4d.BITMAPSHADER_FILENAME]:
+				result[1] = shader[c4d.BITMAPSHADER_FILENAME]
+			else:
+				rgb = material[c4d.MATERIAL_COLOR_COLOR]
+				result[0][0] = rgb.x
+				result[0][1] = rgb.y
+				result[0][2] = rgb.z
+				pass
+			pass
+
+		return result
+		pass
+
+	def populateColorAttr( self, xmlParent, attrName, valueRgb, valueFile ):
+		xml = ET.SubElement( xmlParent, "param", name = attrName )
+		basePath = os.path.dirname( self.xmlFilePath )
+		fileName = valueFile
+		if fileName:
+			fileName = os.path.relpath( fileName, basePath )
+			fileName = fileName.replace( "\\" , "/" )				
+			xml.set( "type", "file" )
+			xml.set( "value", fileName )
+		else:
+			xml.set( "type", "color" )		
+			xml.set( "valueR", str( valueRgb[0] ) )
+			xml.set( "valueG", str( valueRgb[0] ) )
+			xml.set( "valueB", str( valueRgb[1] ) )	
+		pass
+
+	def populateShaderParams( self, xmlParent, material ):
+		xml = ET.SubElement( xmlParent, "shaderParams" )
+		xml.set( "type", "c4d" )
+
+		if material and material[c4d.MATERIAL_USE_COLOR]:
+			rgb = material[c4d.MATERIAL_COLOR_COLOR]
+			valueRgb = [rgb.x, rgb.y, rgb.z]
+			valueFile = None
+			shader = material[c4d.MATERIAL_COLOR_SHADER]
+			if shader and ( c4d.Xbitmap == shader.GetType() ):
+				if shader[c4d.BITMAPSHADER_FILENAME]:
+					valueFile = shader[c4d.BITMAPSHADER_FILENAME]
+					pass
+				pass
+			pass
+			self.populateColorAttr( xml, "color", valueRgb, valueFile )
+		pass
 
 	## createTriMesh
 	def createTriMesh( self, polyObj, polyFaces, colorRgb ):
@@ -394,9 +447,12 @@ class TriMeshExporter( object ):
 						uv0 = uvwDict[polyUvs[fv0]]
 						uv1 = uvwDict[polyUvs[fv1]]
 						uv2 = uvwDict[polyUvs[fv2]]
-						[u0,v0] = [1.0 -uv0.x, -uv0.y]
-						[u1,v1] = [1.0 -uv1.x, -uv1.y]
-						[u2,v2] = [1.0 -uv2.x, -uv2.y]
+						#[u0,v0] = [1.0 -uv0.x, -uv0.y]
+						#[u1,v1] = [1.0 -uv1.x, -uv1.y]
+						#[u2,v2] = [1.0 -uv2.x, -uv2.y]
+						[u0,v0] = [uv0.x, 1.0 - uv0.y]
+						[u1,v1] = [uv1.x, 1.0 - uv1.y]
+						[u2,v2] = [uv2.x, 1.0 - uv2.y]						
 						pass
 					pass
 				#print( "%f, %f" % ( u0, v0 ) );
@@ -432,9 +488,13 @@ class TriMeshExporter( object ):
 		xml.set( "type", material.GetName() if material else "" )
 		# Get color
 		colorRgb = [0.8, 0.8, 0.8]
-		if material and material[c4d.MATERIAL_USE_COLOR]:
-			c = material[c4d.MATERIAL_COLOR_COLOR]
-			colorRgb = [c.x, c.y, c.z]
+		colorFile = None
+		try:
+			[colorRgb, colorFile] = self.getColor( material )
+		except:
+			pass
+		# Shader params
+		self.populateShaderParams( xml, material )				
 		# Get buffers
 		triMesh = self.createTriMesh( polyObj, polyFaces, colorRgb );
 		# Write buffers
@@ -467,7 +527,7 @@ class TriMeshExporter( object ):
 		for tag in tags:
 			if c4d.Ttexture == tag.GetType():
 				textureTags.append( tag ) 
-				print( "Found texture tag: %s" % tag.GetName() )
+				print( "Found texture tag: %s %s %s" % ( tag.GetName(), tag.GetMaterial().GetName(), tag[c4d.TEXTURETAG_RESTRICTION] ) )
 			elif c4d.Tpolygonselection == tag.GetType():
 				selectionTags[tag.GetName()] = tag
 				print( "Found selection tag: %s" % tag.GetName() )
@@ -475,8 +535,9 @@ class TriMeshExporter( object ):
 			pass
 
 		polyCount = polyObj.GetPolygonCount()
-		unusedFaces = [i for i in range( polyCount )]
+		#unusedFaces = [i for i in range( polyCount )]
 
+		# Ordering matters for restrictedTextureTags
 		restrictedTextureTags = []
 		if len( selectionTags ) > 0:
 			uniqueSelections = []
@@ -486,6 +547,7 @@ class TriMeshExporter( object ):
 					if ( selectionName in selectionTags.keys() ) and ( selectionName not in uniqueSelections ):
 						uniqueSelections.append( selectionName )
 						restrictedTextureTags.append( textureTag )
+						print( "Restricted texture tag: %s %s %s" % ( textureTag.GetName(), textureTag.GetMaterial().GetName(), textureTag[c4d.TEXTURETAG_RESTRICTION] ) )
 						pass
 					pass
 				pass			
@@ -493,32 +555,44 @@ class TriMeshExporter( object ):
 			# If there's only one texture tag, it will apply to all faces.
 			if 1 == len( textureTags ):
 				material = textureTags[0].GetMaterial()
-				faces = list( unusedFaces )
-				del unusedFaces[:]
+				faces = [i for i in range( polyCount )]
+				#del unusedFaces[:]
 				materialFaces.append( { "material" : material, "faces" : faces } )
 				pass
 
-		for textureTag in restrictedTextureTags:
+		# Process restrictedTextureTags in reverse
+		usedFaces = []
+		for textureTag in reversed( restrictedTextureTags ):
 			selectionName = textureTag[c4d.TEXTURETAG_RESTRICTION]
 			print( selectionName )
 			selectedFaces = selectionTags[selectionName].GetBaseSelect()
 			material = textureTag.GetMaterial()
 			faces = []
 			for faceIdx in range( polyCount ):
-				if selectedFaces.IsSelected( faceIdx ):
+				if selectedFaces.IsSelected( faceIdx ) and ( faceIdx not in usedFaces ):
 					faces.append( faceIdx )
-					try:
-						unusedFaces.remove( faceIdx )
-					except ValueError:
-						# remove will throw if th evalue isn't found - just ignore it.
-						pass
-					pass
+					usedFaces.append( faceIdx )
+					#try:
+					#	unusedFaces.remove( faceIdx )
+					#except ValueError:
+					#	# remove will throw if th evalue isn't found - just ignore it.
+					#	pass
+					#pass
 				pass
 			if len( faces ) > 0:
+				print material.GetName(), faces
 				materialFaces.append( { "material" : material, "faces" : faces } )	
 			pass
 
+		unusedFaces = []
+		for faceIdx in range( polyCount ):
+			if faceIdx not in usedFaces:
+				unusedFaces.append( faceIdx )
+				pass
+			pass
+
 		if len( unusedFaces ) > 0:
+			print unusedFaces
 			materialFaces.append( { "material" : None, "faces" : unusedFaces } )
 			pass
 

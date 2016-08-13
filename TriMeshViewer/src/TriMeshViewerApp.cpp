@@ -71,7 +71,7 @@ void TriMeshViewerApp::setup()
 	mCam.lookAt( vec3( -5, 4, -15 ), vec3( 0, 0, 0 ) );
 	mNodes = ss::load( getAssetPath( "Untitled_3/Untitled_3.xml" ) );
 
-	mTex = gl::Texture2d::create( loadImage( getAssetPath( "textures/photo_1.jpg" ) ) );
+	//mTex = gl::Texture2d::create( loadImage( getAssetPath( "textures/photo_1.jpg" ) ) );
 }
 
 void TriMeshViewerApp::mouseDown( MouseEvent event )
@@ -92,11 +92,11 @@ void TriMeshViewerApp::draw()
 	//gl::multViewMatrix( glm::scale( vec3( -1, 1, 1 ) ) );
 
 	//gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
-	//gl::rotate( 0.0f * getElapsedSeconds(), 0, 1, 0 );
+	//gl::rotate( 0.2f * getElapsedSeconds(), 1, 0, 0 );
 	//gl::scale( vec3( 1.0f + 0.10f * sin( 2.0f * getElapsedSeconds() ) ) );
 
 	for( auto& node : mNodes ) {
-		gl::ScopedTextureBind texBind( mTex, 0 );
+		//gl::ScopedTextureBind texBind( mTex, 0 );
 		node.getBatch()->getGlslProg()->uniform( "uTex0", 0 );
 		node.draw();
 	}
