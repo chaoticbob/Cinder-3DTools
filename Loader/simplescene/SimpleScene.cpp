@@ -67,6 +67,9 @@ void Node::draw()
 		return;
 	}
 
+	gl::ScopedViewMatrix scopedViewMatrix;
+	gl::multViewMatrix( glm::scale( vec3( -1, 1, 1 ) ) );
+
 	gl::ScopedModelMatrix scopedModel;
 	if( mTransformEnabled ) {
 		gl::rotate( 3.141592, vec3( 0, 1, 0 ) );

@@ -68,7 +68,7 @@ private:
 void TriMeshViewerApp::setup()
 {
 	//mCam.lookAt( vec3( 2, 17, 20 ), vec3( 0, 0, 0 ) );
-	mCam.lookAt( vec3( -15, 4, -15 ), vec3( 0, 0, 0 ) );
+	mCam.lookAt( vec3( -5, 4, -15 ), vec3( 0, 0, 0 ) );
 	mNodes = ss::load( getAssetPath( "Untitled_3/Untitled_3.xml" ) );
 
 	mTex = gl::Texture2d::create( loadImage( getAssetPath( "textures/photo_1.jpg" ) ) );
@@ -89,7 +89,7 @@ void TriMeshViewerApp::draw()
 
 	gl::setMatrices( mCam );
 	//gl::multViewMatrix( glm::scale( vec3( -1, 1, 1 ) ) * glm::rotate( 3.141592f, vec3( 0, 1, 0 ) ) );
-	gl::multViewMatrix( glm::scale( vec3( -1, 1, 1 ) ) );
+	//gl::multViewMatrix( glm::scale( vec3( -1, 1, 1 ) ) );
 
 	//gl::rotate( 0.5f * getElapsedSeconds(), 0, 1, 0 );
 	//gl::rotate( 0.0f * getElapsedSeconds(), 0, 1, 0 );
