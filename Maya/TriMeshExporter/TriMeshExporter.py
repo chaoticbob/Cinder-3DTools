@@ -48,6 +48,7 @@ reload( TriMeshExporter )
 """
 
 import maya.api.OpenMaya as OpenMaya
+import maya.OpenMaya as OpenMaya_v1
 import maya.cmds as cmds
 import array
 import math 
@@ -771,11 +772,19 @@ class TriMeshExporter( object ):
 			pass
 
 	def exportScene( self ):
-		it = OpenMaya.MItDag( OpenMaya.MItDag.kDepthFirst, OpenMaya.MFn.kInvalid )
+		selList = OpenMaya.MSelectionList()
+		# Pull the path names using API 1.0
+		it = OpenMaya_v1.MItDag( OpenMaya_v1.MItDag.kDepthFirst, OpenMaya_v1.MFn.kInvalid )
 		while not it.isDone():
-			dagPath = it.getPath()
-			print( dagPath )
+			dagPath = OpenMaya_v1.MDagPath()
+			it.getPath( dagPath )
+			if OpenMaya_v1.MFn.kTransform == dagPath.apiType():
+				pathStr = dagPath.fullPathName()
+				print( "Found: %s" % pathStr )
+				selList.add( pathStr )
+				pass	
 			it.next()
+			pass
 		pass
 
 	# class TriMeshExporter			
