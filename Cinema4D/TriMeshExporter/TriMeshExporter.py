@@ -535,7 +535,7 @@ class TriMeshExporter( object ):
 			pass
 
 		polyCount = polyObj.GetPolygonCount()
-		#unusedFaces = [i for i in range( polyCount )]
+		usedFaces = []
 
 		# Ordering matters for restrictedTextureTags
 		restrictedTextureTags = []
@@ -554,14 +554,15 @@ class TriMeshExporter( object ):
 		else:
 			# If there's only one texture tag, it will apply to all faces.
 			if 1 == len( textureTags ):
+				# Build material and faces connection
 				material = textureTags[0].GetMaterial()
 				faces = [i for i in range( polyCount )]
-				#del unusedFaces[:]
 				materialFaces.append( { "material" : material, "faces" : faces } )
+				# Mark all faces as used
+				usedFaces.extend( faces )
 				pass
 
 		# Process restrictedTextureTags in reverse
-		usedFaces = []
 		for textureTag in reversed( restrictedTextureTags ):
 			selectionName = textureTag[c4d.TEXTURETAG_RESTRICTION]
 			print( selectionName )
@@ -584,6 +585,8 @@ class TriMeshExporter( object ):
 				materialFaces.append( { "material" : material, "faces" : faces } )	
 			pass
 
+		#print( "Used faces: ", usedFaces )
+
 		unusedFaces = []
 		for faceIdx in range( polyCount ):
 			if faceIdx not in usedFaces:
@@ -591,6 +594,7 @@ class TriMeshExporter( object ):
 				pass
 			pass
 
+		#print( "Unused faces: ", unusedFaces )
 		if len( unusedFaces ) > 0:
 			print unusedFaces
 			materialFaces.append( { "material" : None, "faces" : unusedFaces } )
