@@ -686,18 +686,29 @@ class TriMeshExporter( object ):
 		pass
 
 	## findMayaMeshes
-	def findMayaMeshes( self, dagPath ):
+	def findMayaMeshes( self, dagPath, existingMeshInfos ):
 		result = []
 		for childNum in range( 0, dagPath.childCount() ):
 			childObj = dagPath.child( childNum )
 			childDagPath = OpenMaya.MDagPath.getAPathTo( childObj )
 			childApiType = childDagPath.apiType()
 			if OpenMaya.MFn.kTransform == childApiType:
-				meshInfos = self.findMayaMeshes( childDagPath )
+				meshInfos = self.findMayaMeshes( childDagPath, existingMeshInfos )
 				result.extend( meshInfos )
 			elif OpenMaya.MFn.kMesh == childApiType:
 				mi = MeshInfo( dagPath, childDagPath )
-				result.append( mi )
+				append = True
+				# Filter so we have unique paths
+				for exMi in existingMeshInfos:
+					if ( mi.transformDagPath == exMi.transformDagPath ) and ( mi.shapeDagPath == exMi.shapeDagPath ):
+						append = False
+						break
+						pass
+					pass
+				# Append if mesh info wasn't filtered out					
+				if append:
+					result.append( mi )
+					pass
 				pass
 			pass
 		return result
@@ -718,16 +729,19 @@ class TriMeshExporter( object ):
 		pass		
 
 	## exportSelected
-	def exportSelected( self, path, bakeTranform, angleWeightedNormals ):
+	def exportSelected( self, path, bakeTranform, angleWeightedNormals, selList = None ):
 		self.basePath = path
 		self.bakeTranform = bakeTranform
 		self.angleWeightedNormals = angleWeightedNormals
 
-		# Get selection list
-		selList = OpenMaya.MGlobal.getActiveSelectionList()
+		# Get selection list if one isn't passed in
+		if selList is None:
+			selList = OpenMaya.MGlobal.getActiveSelectionList()
+		# Bail if the selection list is empty
 		if selList.isEmpty():
 			print( "Nothing selected" )
 			return
+			pass
 		# Create a directory using the scene name
 		sceneFileName = cmds.file( q = True, sceneName = True );
 		if ( sceneFileName is None ) or ( ( sceneFileName is not None ) and ( 0 == len( sceneFileName ) ) ):
@@ -752,7 +766,7 @@ class TriMeshExporter( object ):
 			if OpenMaya.MItSelectionList.kDagSelectionItem == it.itemType():
 				dagPath = it.getDagPath()
 				if dagPath.isVisible():
-					tmpMeshInfos = self.findMayaMeshes( dagPath )
+					tmpMeshInfos = self.findMayaMeshes( dagPath, meshInfos )
 					meshInfos.extend( tmpMeshInfos )
 				pass
 			# Advance to next item
@@ -771,9 +785,9 @@ class TriMeshExporter( object ):
 			print( "Wrote %s" % self.xmlFilePath )
 			pass
 
-	def exportScene( self ):
+	def exportScene( self, path, bakeTranform, angleWeightedNormals ):
 		selList = OpenMaya.MSelectionList()
-		# Pull the path names using API 1.0
+		# Pull the path names using API 1.0 - build selection list
 		it = OpenMaya_v1.MItDag( OpenMaya_v1.MItDag.kDepthFirst, OpenMaya_v1.MFn.kInvalid )
 		while not it.isDone():
 			dagPath = OpenMaya_v1.MDagPath()
@@ -785,6 +799,8 @@ class TriMeshExporter( object ):
 				pass	
 			it.next()
 			pass
+		# Export the selection list
+		self.exportSelected( path, bakeTranform, angleWeightedNormals, selList )
 		pass
 
 	# class TriMeshExporter			
@@ -804,8 +820,16 @@ def exportSelected( path, *args, **kwargs ):
 	exporter.exportSelected( path, bakeTransform, angleWeightedNormals )
 	pass
 
-def exportScene():
+def exportScene( path, *args, **kwargs ):
+	# Error check arguments
+	validKeys = ["bakeTransform", "angleWeightedNormals"]
+	for key in kwargs.keys():
+		if key not in validKeys:
+			raise RuntimeError( "Unknown paramemter: %s" % key )
+	# Grab arguemnts
+	bakeTransform = kwargs.get( "bakeTransform", False )
+	angleWeightedNormals = kwargs.get( "angleWeightedNormals", False )	
 	# Run exporter
 	exporter = TriMeshExporter()
-	exporter.exportScene()
+	exporter.exportScene( path, bakeTransform, angleWeightedNormals )
 	pass		
