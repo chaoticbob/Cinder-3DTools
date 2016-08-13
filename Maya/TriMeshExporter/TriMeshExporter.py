@@ -340,7 +340,7 @@ class TriMeshExporter( object ):
 		return fileName
 		pass		
 
-	## createFilePath
+	## getShaderNode
 	def getShaderNode( self, shaderObj ):
 		sgNode = OpenMaya.MFnDependencyNode( shaderObj )
 		# Get surfaceShader plug in shading group node
@@ -353,7 +353,7 @@ class TriMeshExporter( object ):
 		return shaderNode
 		pass
 
-	## createFilePath
+	## getColor
 	def getColor( self, shaderNode ):
 		# Default this to 1.0 instead of the Maya's 0.0 since Cinder's stock shader multiplies against color.
 		result = [[1.0, 1.0, 1.0], None]
@@ -380,6 +380,7 @@ class TriMeshExporter( object ):
 		return result
 		pass 
 
+	## readAttrFileConnection
 	@staticmethod
 	def readAttrFileConnection( attrName, node, basePath ):
 		result = None
@@ -404,6 +405,7 @@ class TriMeshExporter( object ):
 		return result
 		pass
 
+	## readFloatAttr
 	@staticmethod 
 	def readFloatAttr( attrName, node, defaultValue ):
 		result = defaultValue 
@@ -416,6 +418,7 @@ class TriMeshExporter( object ):
 		return float( result )
 		pass
 
+	## readBoolAttr
 	@staticmethod 
 	def readBoolAttr( attrName, node, defaultValue ):
 		result = defaultValue 
@@ -428,6 +431,7 @@ class TriMeshExporter( object ):
 		return bool( result )
 		pass	
 
+	## populateFloatAttr
 	def populateFloatAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
 		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, os.path.dirname( self.xmlFilePath ) )
@@ -441,6 +445,7 @@ class TriMeshExporter( object ):
 			pass
 		pass
 
+	## populateColorAttr
 	def populateColorAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
 		fileName = TriMeshExporter.readAttrFileConnection( attrName, node, os.path.dirname( self.xmlFilePath ) )
@@ -458,6 +463,7 @@ class TriMeshExporter( object ):
 			pass
 		pass
 
+	## populateBoolAttr
 	def populateBoolAttr( self, xmlParent, attrName, node, defaultValue ):
 		xml = ET.SubElement( xmlParent, "param", name = attrName )
 		xml.set( "type", "bool" )		
@@ -465,6 +471,7 @@ class TriMeshExporter( object ):
 		xml.set( "value", str( 1 if value else 0 ) )
 		pass		
 
+	## populateShaderParams
 	def populateShaderParams( self, xmlParent, shaderNode ):
 		xml = ET.SubElement( xmlParent, "shaderParams" )
 		xml.set( "type", "maya" )
@@ -505,7 +512,7 @@ class TriMeshExporter( object ):
 			pass
 		pass
 
-	## createFilePath
+	## createTriMesh
 	def createTriMesh( self, mesh, meshData, polyFaces, colorRgb, ciAttrs ):
 		# Decide coordinate systems
 		coordSys = OpenMaya.MSpace.kObject
@@ -563,7 +570,7 @@ class TriMeshExporter( object ):
 		return triMesh
 		pass
 
-	## createFilePath
+	## writeTriMeshFile
 	def writeTriMeshFile( self, parentDagPath, xmlParent, path, mesh, meshData, shaderCount, shaderObj, polyFaces, ciAttrs ):
 		if not mesh:
 			return
@@ -603,7 +610,7 @@ class TriMeshExporter( object ):
 		print( "Exported %s to %s" % ( dagPath.partialPathName(), filePath ) )		
 		pass
 
-
+	## getMeshData
 	def getMeshData( self, mesh, ciAttrs ):
 		# Decide coordinate systems
 		coordSys = OpenMaya.MSpace.kObject
@@ -623,6 +630,7 @@ class TriMeshExporter( object ):
 		return meshData
 		pass
 
+	## getShaderFaces
 	def getShaderFaces( self, mesh, instance ):
 		shaderFaces = {}
 		[shaderObjs, polyInfos] = mesh.getConnectedShaders( instance )
@@ -637,7 +645,7 @@ class TriMeshExporter( object ):
 		return [shaderObjs, polyInfos, shaderFaces]
 		pass
 
-	## createFilePath
+	## exportMesh
 	def exportMesh(self, transformDagPath, shapeDagPath, path, xmlParent):
 		if OpenMaya.MFn.kMesh != shapeDagPath.apiType():
 			print( "Node isn't MFnMesh : %s" % shapeDagPath.partialPathName())
@@ -694,6 +702,7 @@ class TriMeshExporter( object ):
 		return result
 		pass
 
+	## getCinderAttributes
 	def getCinderAttributes( self, transformDagPath ):
 		attrs = {}
 		attrs["bakeTransform"] = False
@@ -707,7 +716,7 @@ class TriMeshExporter( object ):
 		return attrs
 		pass		
 
-	## createFilePath
+	## exportSelected
 	def exportSelected( self, path, bakeTranform, angleWeightedNormals ):
 		self.basePath = path
 		self.bakeTranform = bakeTranform
@@ -720,11 +729,12 @@ class TriMeshExporter( object ):
 			return
 		# Create a directory using the scene name
 		sceneFileName = cmds.file( q = True, sceneName = True );
-		if sceneFileName is None:
+		if ( sceneFileName is None ) or ( ( sceneFileName is not None ) and ( 0 == len( sceneFileName ) ) ):
 			sceneFileName = "untitled"
 			pass
 		[sceneFile, sceneExt] = os.path.splitext( os.path.basename( sceneFileName ) )
 		path = os.path.join( path, sceneFile )
+		path = path.replace( "\\", "/" )
 		print( "Exporting as Cinder TriMesh data to %s" % path )
 		if not os.path.exists( path ):
 			os.makedirs( path )
@@ -738,14 +748,19 @@ class TriMeshExporter( object ):
 		it = OpenMaya.MItSelectionList( selList );
 		while not it.isDone():
 			#self.exportDagPath( xmlRoot, it.getDagPath(), path, fileName );
-			tmpMeshInfos = self.findMayaMeshes( it.getDagPath() )
-			meshInfos.extend( tmpMeshInfos )
+			if OpenMaya.MItSelectionList.kDagSelectionItem == it.itemType():
+				dagPath = it.getDagPath()
+				if dagPath.isVisible():
+					tmpMeshInfos = self.findMayaMeshes( dagPath )
+					meshInfos.extend( tmpMeshInfos )
+				pass
 			# Advance to next item
 			it.next()
-		pass
+			pass
 		# Export mesh geometry
-		for meshInfo in meshInfos:
+		for meshInfo in meshInfos:			
 			self.exportMesh( meshInfo.transformDagPath, meshInfo.shapeDagPath, path, xmlRoot )
+			pass
 		# Write XML
 		if len( list( xmlRoot ) ) > 0:
 			tree = ET.ElementTree( xmlRoot )
@@ -754,6 +769,16 @@ class TriMeshExporter( object ):
 			file.write( prettyXml )	
 			print( "Wrote %s" % self.xmlFilePath )
 			pass
+
+	def exportScene( self ):
+		it = OpenMaya.MItDag( OpenMaya.MItDag.kDepthFirst, OpenMaya.MFn.kInvalid )
+		while not it.isDone():
+			dagPath = it.getPath()
+			print( dagPath )
+			it.next()
+		pass
+
+	# class TriMeshExporter			
 	pass
 
 def exportSelected( path, *args, **kwargs ):
@@ -769,3 +794,9 @@ def exportSelected( path, *args, **kwargs ):
 	exporter = TriMeshExporter()
 	exporter.exportSelected( path, bakeTransform, angleWeightedNormals )
 	pass
+
+def exportScene():
+	# Run exporter
+	exporter = TriMeshExporter()
+	exporter.exportScene()
+	pass		
