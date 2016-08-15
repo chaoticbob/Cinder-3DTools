@@ -10,6 +10,11 @@ class BaseMaterial( object ):
 		print( "BaseMaterial c'tor" )		
 		pass
 
+	## getName
+	def getName( self ):
+		raise NotImplementedError()
+		pass		
+
 	## class BaseMaterial
 	pass
 
@@ -34,6 +39,40 @@ class BaseMesh( object ):
 
 	## class BaseMesh
 	pass
+
+## \class BaseCamera
+#
+#
+class BaseCamera( object ):
+	## c'tor
+	def __init__( self ):
+		print( "BaseCamera c'tor" )		
+		pass
+
+	## getName
+	def getName( self ):
+		raise NotImplementedError()
+		pass
+
+	## class BaseCamera
+	pass
+
+## \class BaseLight
+#
+#
+class BaseLight( object ):
+	## c'tor
+	def __init__( self ):
+		print( "BaseLight c'tor" )		
+		pass
+
+	## getName
+	def getName( self ):
+		raise NotImplementedError()
+		pass
+
+	## class BaseLight
+	pass	
 
 ## \class BaseExporter
 #
