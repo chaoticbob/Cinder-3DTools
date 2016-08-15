@@ -1,5 +1,5 @@
 
-from BaseExport import BaseExporter
+from Base import BaseExporter
 
 class C4DExporter( BaseExporter ):
 	def __init__( self ):
